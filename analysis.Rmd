@@ -2,5 +2,6 @@
 
 dataset <- read.delim("GENDX000019_GeneMatrix_rawCounts.txt", row.names=1)
 class(dataset)
-#Remove features that do not have sufficient reads
+
+# Remove features that do not have sufficient reads
 # gcounts_proc <- gcounts_proc[rowSums(cpm(gcounts_proc)>1) >= 11,]
