@@ -1,7 +1,35 @@
 # A distinct epigenetic profile distinguishes stenotic from non-inflamed fibroblasts in the ileal mucosa of Crohn’s disease patients
 
-dataset <- read.delim("GENDX000019_GeneMatrix_rawCounts.txt", row.names=1)
-class(dataset)
+library(SummarizedExperiment)
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("DESeq2")
+
+library(DESeq2)
+
+#Load the gene expression matrix
+df <- read.delim("GENDX000019_GeneMatrix_rawCounts.txt", row.names=1)
+
+#Load the metadata and delete the non useful columns
+metadata <- read.delim("GEND000019-meta.txt", row.names=5) 
 
 # Remove features that do not have sufficient reads
-# gcounts_proc <- gcounts_proc[rowSums(cpm(gcounts_proc)>1) >= 11,]
+df <- df[rowSums(df>1) >= 11,]
+
+#Create the SE
+SE <- SummarizedExperiment(assays=list(exp=df), colData=metadata)
+head(assay(SE))
+colData(SE)
+
+#DESeq
+dds1 <- DESeqDataSet(SE, design = ~ gender + age + disease)
+
+dds2 <- DESeqDataSet(SE, design = ~ gender + age + disease.state)
+
+dds3 <- DESeqDataSet(SE, design = ~ gender + age + disease)
+
+dds4 <- DESeqDataSet(SE, design = ~ gender + age + disease)
+
+
+
