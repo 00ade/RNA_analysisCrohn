@@ -1,10 +1,21 @@
 # A distinct epigenetic profile distinguishes stenotic from non-inflamed fibroblasts in the ileal mucosa of Crohn’s disease patients
 
-library(SummarizedExperiment)
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("tximport")
 
-if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
+
+library(SummarizedExperiment)
+library("tximport")
+library(ggplot2)
+library("pheatmap")
+library("RColorBrewer")
+
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
 BiocManager::install("DESeq2")
+
 
 library(DESeq2)
 
@@ -12,24 +23,93 @@ library(DESeq2)
 df <- read.delim("GENDX000019_GeneMatrix_rawCounts.txt", row.names=1)
 
 #Load the metadata and delete the non useful columns
-metadata <- read.delim("GEND000019-meta.txt", row.names=5) 
+metadata <- read.delim("GEND000019-meta.txt", row.names=5)
+# met<- as.data.frame(lapply(met, as.factor))
+
 
 # Remove features that do not have sufficient reads
-df <- df[rowSums(df>1) >= 11,]
+df1 <- df[rowSums(df>1) >= 11,]
 
-#Create the SE
-SE <- SummarizedExperiment(assays=list(exp=df), colData=metadata)
-head(assay(SE))
-colData(SE)
+df1<- as.data.frame(lapply(df, as.integer))
+row.names(df1) <- row.names(df)
+#metadata$Age <- as.factor(metadata$Age)
+metadata$Age.Level <-  cut(metadata$Age, c(17, 40, 80))
+
 
 #DESeq
-dds1 <- DESeqDataSet(SE, design = ~ gender + age + disease)
 
-dds2 <- DESeqDataSet(SE, design = ~ gender + age + disease.state)
+#INTRA
+dds1 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease)
 
-dds3 <- DESeqDataSet(SE, design = ~ gender + age + disease)
+# log
+rld1 <- rlog(dds1, blind=FALSE)
 
-dds4 <- DESeqDataSet(SE, design = ~ gender + age + disease)
+plotPCA(rld1, intgroup = c("Disease"))
 
+dds1 <- DESeq(dds1)
+
+res1<-results(dds1)
+
+summary(res1)
+
+# Show the significant genes with the strongest down or up regulation
+resSig1 <- subset(res1, padj < 0.1)
+head(resSig1[order(resSig1$log2FoldChange, decreasing=T), ])
+
+# Show significant effects of treatment on gene counts more than doubling or less than halfing
+resLFC1 <- results(dds1, lfcThreshold=1)
+table(resLFC1$padj < 0.1)
+
+
+
+
+
+
+#INTER
+dds2 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease.State)
+
+# log
+rld2 <- rlog(dds2, blind=FALSE)
+
+plotPCA(rld2, intgroup = c("Disease.State"))
+
+dds2 <- DESeq(dds2)
+
+res2<-results(dds2)
+
+summary(res2)
+
+# Show the significant genes with the strongest down or up regulation
+resSig2 <- subset(res2, padj < 0.1)
+head(resSig2[order(resSig2$log2FoldChange, decreasing=T), ])
+
+# Show significant effects of treatment on gene counts more than doubling or less than halfing
+resLFC2 <- results(dds2, lfcThreshold=1)
+table(resLFC2$padj < 0.1)
+
+# We can also make custom plots using the ggplot function For example we can show the best gene based on treatment and cell line:
+topGene2 <- rownames(res2)[which.min(res2$padj)]
+
+geneCounts2 <- plotCounts(dds2, gene=topGene2, intgroup=c("Disease", "Disease.State"), returnData=TRUE)
+
+
+ggplot(geneCounts2, aes(x=Disease, y=count, color=Disease.State)) +
+  scale_y_log10() + 
+  geom_point(position=position_jitter(width=.1,height=0), size=3)
+
+
+
+#ALL
+dds3 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease + Disease.State
+        + Disease:Disease.State)
+dds3 <- DESeq(dds3)
+        
+
+dds4 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease)
+dds4 <- DESeq(dds4)
+
+
+dds5 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease)
+dds5 <- DESeq(dds5)
 
 
