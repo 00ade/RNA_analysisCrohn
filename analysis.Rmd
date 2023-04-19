@@ -1,15 +1,12 @@
 # A distinct epigenetic profile distinguishes stenotic from non-inflamed fibroblasts in the ileal mucosa of Crohn’s disease patients
 
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-BiocManager::install("tximport")
-
 
 library(SummarizedExperiment)
-library("tximport")
 library(ggplot2)
 library("pheatmap")
 library("RColorBrewer")
+library(clusterProfiler)
+library(org.Hs.eg.db)
 
 
 if (!require("BiocManager", quietly = TRUE))
@@ -29,9 +26,13 @@ metadata <- read.delim("GEND000019-meta.txt", row.names=5)
 
 # Remove features that do not have sufficient reads
 df1 <- df[rowSums(df>1) >= 11,]
+genes <- row.names(df1)
 
-df1<- as.data.frame(lapply(df, as.integer))
-row.names(df1) <- row.names(df)
+df1<- as.data.frame(lapply(df1, as.integer))
+
+#Set as rownames only the Ensembl IDs (cutting the part of gene names)
+row.names(df1) <- substr(genes, 1, 15)
+
 #metadata$Age <- as.factor(metadata$Age)
 metadata$Age.Level <-  cut(metadata$Age, c(17, 40, 80))
 
@@ -44,7 +45,7 @@ dds1 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Le
 # log
 rld1 <- rlog(dds1, blind=FALSE)
 
-plotPCA(rld1, intgroup = c("Disease"))
+plotPCA(rld1, intgroup = c("Age.Level"))
 
 dds1 <- DESeq(dds1)
 
@@ -54,12 +55,20 @@ summary(res1)
 
 # Show the significant genes with the strongest down or up regulation
 resSig1 <- subset(res1, padj < 0.1)
-head(resSig1[order(resSig1$log2FoldChange, decreasing=T), ])
+resSig1 <- resSig1[order(resSig1$log2FoldChange, decreasing=T), ]
+head(resSig1)
 
 # Show significant effects of treatment on gene counts more than doubling or less than halfing
 resLFC1 <- results(dds1, lfcThreshold=1)
 table(resLFC1$padj < 0.1)
 
+#Enrichment (da sistemare)
+gene.sym <- bitr(row.names(res1), fromType = 'ENSEMBL', toType = 'SYMBOL', OrgDb = org.Hs.eg.db)
+
+#geneList_DESeq1 <- resSig1$log2FoldChange
+#names(geneList_DESeq1) <- row.names(resSig1)
+#kk1 <- gseKEGG(geneList = geneList_DESeq1, organism = 'hsa', keyType = "ENSEMBL", pvalueCutoff = 0.1, verbose = FALSE)
+#head(kk1)
 
 
 
