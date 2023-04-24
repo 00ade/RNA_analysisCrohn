@@ -71,57 +71,51 @@ resLFC1 <- results(dds1, lfcThreshold=1)
 table(resLFC1$padj < 0.1)
 
 #PLOT RESULTS:
-topGenes<-rownames(res1[order(res1$padj),])
-plotCounts(dds1, gene=topGenes[1], intgroup=c("Disease"))
+topGenes1<-rownames(res1[order(res1$padj),])
+plotCounts(dds1, gene=topGenes1[1], intgroup=c("Disease"))
 
-plotCounts(dds1, gene=topGenes[2], intgroup=c("Disease"))
+plotCounts(dds1, gene=topGenes1[2], intgroup=c("Disease"))
 #no
 
-plotCounts(dds1, gene=topGenes[3], intgroup=c("Disease"))
+plotCounts(dds1, gene=topGenes1[3], intgroup=c("Disease"))
 #no
 
-plotCounts(dds1, gene=topGenes[4], intgroup=c("Disease"))
+plotCounts(dds1, gene=topGenes1[4], intgroup=c("Disease"))
 #no
 
-plotCounts(dds1, gene=topGenes[5], intgroup=c("Disease"))
+plotCounts(dds1, gene=topGenes1[5], intgroup=c("Disease"))
 #ok
 
-plotCounts(dds1, gene=topGenes[6], intgroup=c("Disease"))
+plotCounts(dds1, gene=topGenes1[6], intgroup=c("Disease"))
 #ok
 
-plotCounts(dds1, gene=topGenes[7], intgroup=c("Disease"))
+plotCounts(dds1, gene=topGenes1[7], intgroup=c("Disease"))
 #ok
 
 #PLOT CON DISEASE.STATE:
-geneCounts <- plotCounts(dds1, gene=topGenes[1], intgroup=c("Disease.State"), returnData=T)
-ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
-  scale_y_log10() + 
-  geom_point(position=position_jitter(width=.1,height=0), size=3)
+geneCounts1 <- plotCounts(dds1, gene=topGenes1[1], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts1, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
 
-geneCounts <- plotCounts(dds1, gene=topGenes[2], intgroup=c("Disease.State"), returnData=T)
-ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
-  scale_y_log10() + 
-  geom_point(position=position_jitter(width=.1,height=0), size=3)
+geneCounts1 <- plotCounts(dds1, gene=topGenes1[2], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts1, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
 
-geneCounts <- plotCounts(dds1, gene=topGenes[3], intgroup=c("Disease.State"), returnData=T)
-ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
-  scale_y_log10() + 
-  geom_point(position=position_jitter(width=.1,height=0), size=3)
+geneCounts1 <- plotCounts(dds1, gene=topGenes1[3], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts1, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
 
-geneCounts <- plotCounts(dds1, gene=topGenes[4], intgroup=c("Disease.State"), returnData=T)
-ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
-  scale_y_log10() + 
-  geom_point(position=position_jitter(width=.1,height=0), size=3)
+geneCounts1 <- plotCounts(dds1, gene=topGenes1[4], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts1, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
 
-geneCounts <- plotCounts(dds1, gene=topGenes[5], intgroup=c("Disease.State"), returnData=T)
-ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
-  scale_y_log10() + 
-  geom_point(position=position_jitter(width=.1,height=0), size=3)
+geneCounts1 <- plotCounts(dds1, gene=topGenes1[5], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts1, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
 
-geneCounts <- plotCounts(dds1, gene=topGenes[6], intgroup=c("Disease.State"), returnData=T)
-ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
-  scale_y_log10() + 
-  geom_point(position=position_jitter(width=.1,height=0), size=3)
+geneCounts1 <- plotCounts(dds1, gene=topGenes1[6], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts1, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
 
 
 #PLOT MA: CHIEDI
@@ -154,21 +148,21 @@ res1 <- res1[ !is.na(res1$pvalue), ]
 res1 <- res1[, -which(names(res1) == "padj")]
 
 # use z-scores as input to FDRtool to re-estimate the p-value
-res_fdr <- fdrtool(res1$stat, statistic= "normal", plot = T)
+res_fdr1 <- fdrtool(res1$stat, statistic= "normal", plot = T)
 
 # add values to the results data frame, also ad new BH- adjusted p-values
-res1[,"padj"] <- p.adjust(res_fdr$pval, method = "BH")
+res1[,"padj"] <- p.adjust(res_fdr1$pval, method = "BH")
 
 # plot correct p-value distribution 
-hist(res_fdr$pval, col = "royalblue4", xlab = "CORRECTED p-values")
+hist(res_fdr1$pval, col = "royalblue4", xlab = "CORRECTED p-values", border="white")
 
 #GENE CLUSTERING:
-topVarGenes <- head(order(rowVars(assay(rld1)),decreasing=TRUE),20) #rowVars takes the variance of each gene  among the samples, in each row.
+topVarGenes1 <- head(order(rowVars(assay(rld1)),decreasing=TRUE),20) #rowVars takes the variance of each gene  among the samples, in each row.
 
-mat <- assay(rld1)[topVarGenes, ]
-mat <- mat - rowMeans(mat)
-df_clust <- as.data.frame(colData(rld1)[,c("Disease","Gender")])
-pheatmap(mat, annotation_col=df_clust)
+mat1 <- assay(rld1)[topVarGenes1, ]
+mat1 <- mat1 - rowMeans(mat1)
+df_clust1 <- as.data.frame(colData(rld1)[,c("Disease","Gender")])
+pheatmap(mat1, annotation_col=df_clust1)
 
 #EXPORTING RESULTS:
 #resOrderedDF <- as.data.frame(res)[1:100,]
@@ -184,7 +178,7 @@ gene.sym <- bitr(row.names(res1), fromType = 'ENSEMBL', toType = 'ENTREZID', Org
 #head(kk1)
 
 
-
+#---------------------------------------------------------------------------------------------------------------
 
 
 #INTER
@@ -193,7 +187,14 @@ dds2 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Le
 # log
 rld2 <- rlog(dds2, blind=FALSE)
 
-plotPCA(rld2, intgroup = c("Disease.State"))
+# No plot changes according to different designs
+plotPCA(rld2, intgroup = c("Gender"))
+plotPCA(rld2, intgroup = c("Age.Level")) 
+plotPCA(rld2, intgroup = c("Disease"))
+plotPCA(rld2, intgroup = c("Disease", "Disease.State"))
+plotPCA(rld2, intgroup = c("Gender", "Disease"))
+plotPCA(rld2, intgroup = c("Age.Level", "Disease"))
+
 
 dds2 <- DESeq(dds2)
 
@@ -201,37 +202,232 @@ res2<-results(dds2)
 
 summary(res2)
 
+
 # Show the significant genes with the strongest down or up regulation
 resSig2 <- subset(res2, padj < 0.1)
-head(resSig2[order(resSig2$log2FoldChange, decreasing=T), ])
+resSig2 <- resSig2[order(resSig2$log2FoldChange, decreasing=T), ]
+head(resSig2)
+
 
 # Show significant effects of treatment on gene counts more than doubling or less than halfing
 resLFC2 <- results(dds2, lfcThreshold=1)
 table(resLFC2$padj < 0.1)
 
-# We can also make custom plots using the ggplot function For example we can show the best gene based on treatment and cell line:
-topGene2 <- rownames(res2)[which.min(res2$padj)]
 
-geneCounts2 <- plotCounts(dds2, gene=topGene2, intgroup=c("Disease", "Disease.State"), returnData=TRUE)
+#PLOT RESULTS CON DISEASE.STATE:
+topGenes2<-rownames(res2[order(res2$padj),])
+plotCounts(dds2, gene=topGenes2[1], intgroup=c("Disease.State"))
+# Stenotic differentially expressed w.r.t other groups
+
+plotCounts(dds2, gene=topGenes2[2], intgroup=c("Disease.State"))
+#no
+
+plotCounts(dds2, gene=topGenes2[3], intgroup=c("Disease.State"))
+# Stenotic differentially expressed w.r.t other groups
 
 
-ggplot(geneCounts2, aes(x=Disease, y=count, color=Disease.State)) +
-  scale_y_log10() + 
-  geom_point(position=position_jitter(width=.1,height=0), size=3)
+#PLOT CON DISEASE:
+geneCounts2 <- plotCounts(dds2, gene=topGenes2[1], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+# No differences
+
+geneCounts2 <- plotCounts(dds2, gene=topGenes2[2], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+# Good
+  
+geneCounts2 <- plotCounts(dds2, gene=topGenes2[3], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+# No
+  
+geneCounts2 <- plotCounts(dds2, gene=topGenes2[4], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+  
+geneCounts2 <- plotCounts(dds2, gene=topGenes2[5], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+  
+geneCounts2 <- plotCounts(dds2, gene=topGenes2[6], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+  
+
+#PLOT MA:
+resultsNames(dds2)
+resprova1 <- results(dds2, contrast = list("Disease.State_stenotic_vs_." ))
+plotMA(resprova1, ylim=c(-5,5))
+
+resprova2 <- results(dds2, contrast = list("Disease.State_inflamed_vs_."))
+plotMA(resprova2, ylim=c(-5,5))
 
 
+resprova3 <- results(dds2, contrast = list("Disease.State_non.inflamed_vs_."))
+plotMA(resprova3, ylim=c(-5,5))
+
+
+#HISTOGRAM OF PVALUES DISTRIBUTION:
+hist(res2$pvalue[res2$baseMean > 1], breaks=0:20/20, col="royalblue4", border="white")
+
+#PVALUE CORRECTION:
+
+# remove filtered out genes by independent filtering,
+# they have NA adj. pvals
+res2 <- res2[ !is.na(res2$padj),] 
+# remove genes with NA pvals (outliers)
+res2 <- res2[ !is.na(res2$pvalue), ]
+# remove adjsuted pvalues, since we add the fdrtool results later on
+res2 <- res2[, -which(names(res2) == "padj")]
+
+# use z-scores as input to FDRtool to re-estimate the p-value
+res_fdr2 <- fdrtool(res2$stat, statistic= "normal", plot = T)
+
+# add values to the results data frame, also ad new BH- adjusted p-values
+res2[,"padj"] <- p.adjust(res_fdr2$pval, method = "BH")
+
+# plot correct p-value distribution 
+hist(res_fdr2$pval, col = "royalblue4", xlab = "CORRECTED p-values", border="white")
+
+#GENE CLUSTERING:
+topVarGenes2 <- head(order(rowVars(assay(rld2)),decreasing=TRUE),20) #rowVars takes the variance of each gene  among the samples, in each row.
+
+mat2 <- assay(rld2)[topVarGenes2, ]
+mat2 <- mat2 - rowMeans(mat2)
+df_clust2 <- as.data.frame(colData(rld2)[,c("Disease.State","Gender")])
+pheatmap(mat2, annotation_col=df_clust2)
+
+#EXPORTING RESULTS:
+#resOrderedDF <- as.data.frame(res)[1:100,]
+#write.csv(resOrderedDF, file="results.csv")
+
+
+
+#---------------------------------------------------------------------------------------------------------------
 
 #ALL
-dds3 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease + Disease.State
-        + Disease:Disease.State)
+dds3 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease.State + Gender:Disease.State)
+
+# log
+rld3 <- rlog(dds3, blind=FALSE)
+
+# No plot changes according to different designs
+plotPCA(rld3, intgroup = c("Gender"))
+plotPCA(rld3, intgroup = c("Age.Level")) 
+plotPCA(rld3, intgroup = c("Disease"))
+plotPCA(rld3, intgroup = c("Disease", "Disease.State"))
+plotPCA(rld3, intgroup = c("Gender", "Disease"))
+plotPCA(rld3, intgroup = c("Age.Level", "Disease"))
+
+
 dds3 <- DESeq(dds3)
+
+res3<-results(dds3)
+
+summary(res3)
+
+
+# Show the significant genes with the strongest down or up regulation
+resSig3 <- subset(res3, padj < 0.1)
+resSig3 <- resSig3[order(resSig3$log2FoldChange, decreasing=T), ]
+head(resSig3)
+
+
+# Show significant effects of treatment on gene counts more than doubling or less than halfing
+resLFC3 <- results(dds3, lfcThreshold=1)
+table(resLFC3$padj < 0.1)
+
+
+#PLOT RESULTS CON DISEASE.STATE:
+topGenes3<-rownames(res3[order(res3$padj),])
+plotCounts(dds3, gene=topGenes3[1], intgroup=c("Disease.State"))
+# Stenotic differentially expressed w.r.t other groups
+
+plotCounts(dds3, gene=topGenes3[2], intgroup=c("Disease.State"))
+#no
+
+plotCounts(dds3, gene=topGenes3[3], intgroup=c("Disease.State"))
+# Stenotic differentially expressed w.r.t other groups
+
+
+#PLOT CON DISEASE:
+geneCounts3 <- plotCounts(dds3, gene=topGenes3[1], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+# No differences
+
+geneCounts3 <- plotCounts(dds3, gene=topGenes3[2], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+# Good
+  
+geneCounts3 <- plotCounts(dds3, gene=topGenes3[3], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+# No
+  
+geneCounts3 <- plotCounts(dds3, gene=topGenes3[4], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+  
+geneCounts3 <- plotCounts(dds3, gene=topGenes3[5], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+  
+geneCounts3 <- plotCounts(dds3, gene=topGenes3[6], intgroup=c("Disease"), returnData=T)
+ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
+  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
+  
+
+#PLOT MA:
+resultsNames(dds3)
+resprova1 <- results(dds3, contrast = list("Gendermale.Disease.Statestenotic"))
+plotMA(resprova1, ylim=c(-5,5))
+
+resprova2 <- results(dds3, contrast = list("Gendermale.Disease.Stateinflamed"))
+plotMA(resprova2, ylim=c(-5,5))
+
+
+resprova3 <- results(dds3, contrast = list("Gendermale.Disease.Statenon.inflamed"))
+plotMA(resprova3, ylim=c(-5,5))
+
+
+#HISTOGRAM OF PVALUES DISTRIBUTION:
+hist(res3$pvalue[res3$baseMean > 1], breaks=0:20/20, col="royalblue4", border="white")
+
+#PVALUE CORRECTION:
+
+# remove filtered out genes by independent filtering,
+# they have NA adj. pvals
+res3 <- res3[ !is.na(res3$padj),] 
+# remove genes with NA pvals (outliers)
+res3 <- res3[ !is.na(res3$pvalue), ]
+# remove adjsuted pvalues, since we add the fdrtool results later on
+res3 <- res3[, -which(names(res3) == "padj")]
+
+# use z-scores as input to FDRtool to re-estimate the p-value
+res_fdr3 <- fdrtool(res3$stat, statistic= "normal", plot = T)
+
+# add values to the results data frame, also ad new BH- adjusted p-values
+res3[,"padj"] <- p.adjust(res_fdr3$pval, method = "BH")
+
+# plot correct p-value distribution 
+hist(res_fdr3$pval, col = "royalblue4", xlab = "CORRECTED p-values", border="white")
+
+#GENE CLUSTERING:
+topVarGenes3 <- head(order(rowVars(assay(rld3)),decreasing=TRUE),20) #rowVars takes the variance of each gene  among the samples, in each row.
+
+mat3 <- assay(rld3)[topVarGenes3, ]
+mat3 <- mat3 - rowMeans(mat3)
+df_clust3 <- as.data.frame(colData(rld3)[,c("Disease.State","Gender")])
+pheatmap(mat3, annotation_col=df_clust3)
+
+#EXPORTING RESULTS:
+#resOrderedDF <- as.data.frame(res)[1:100,]
+#write.csv(resOrderedDF, file="results.csv")
+
         
 
-dds4 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease)
-dds4 <- DESeq(dds4)
-
-
-dds5 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease)
-dds5 <- DESeq(dds5)
 
 
