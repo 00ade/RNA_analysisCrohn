@@ -1,5 +1,9 @@
 # A distinct epigenetic profile distinguishes stenotic from non-inflamed fibroblasts in the ileal mucosa of Crohn’s disease patients
 
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("genefilter")
+
 
 library(SummarizedExperiment)
 library(ggplot2)
@@ -7,14 +11,9 @@ library("pheatmap")
 library("RColorBrewer")
 library(clusterProfiler)
 library(org.Hs.eg.db)
-
-
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-BiocManager::install("DESeq2")
-
-
+library(fdrtool)
 library(DESeq2)
+library("genefilter")
 
 #Load the gene expression matrix
 df <- read.delim("GENDX000019_GeneMatrix_rawCounts.txt", row.names=1)
@@ -45,7 +44,15 @@ dds1 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Le
 # log
 rld1 <- rlog(dds1, blind=FALSE)
 
-plotPCA(rld1, intgroup = c("Age.Level"))
+#PCA: La PCA (Principal Component Analysis) è una tecnica di analisi statistica multivariata che mira a identificare i fattori principali (o le componenti principali) che spiegano la maggior parte della varianza dei dati. In pratica, la PCA cerca di trovare un set di nuove variabili che siano una combinazione lineare dei dati originali, in modo che la prima nuova variabile spieghi la massima varianza possibile, la seconda spieghi la massima varianza rimanente, e così via. I valori PC1 e PC2, nel grafico della PCA, sono i valori delle prime due componenti principali, ovvero le due variabili lineari che spiegano la maggior parte della varianza dei dati. Essi sono visualizzati come un grafico a dispersione bidimensionale, dove ogni punto rappresenta una osservazione (ad esempio, un campione di dati), e le coordinate di ogni punto corrispondono ai suoi valori per le componenti principali PC1 e PC2. Questo tipo di grafico è utile per visualizzare le relazioni tra le o osservazioni e per individuare eventuali pattern o cluster nei dati.
+
+#DOMANDA: riusciamo a ricavare la combinazione lineare che lui usa delle variabili?
+plotPCA(rld1, intgroup = c("Gender")) 
+plotPCA(rld1, intgroup = c("Age.Level")) 
+plotPCA(rld1, intgroup = c("Disease"))
+plotPCA(rld1, intgroup = c("Disease", "Disease.State"))
+plotPCA(rld1, intgroup = c("Gender", "Disease"))
+plotPCA(rld1, intgroup = c("Age.Level", "Disease"))
 
 dds1 <- DESeq(dds1)
 
@@ -57,13 +64,119 @@ summary(res1)
 resSig1 <- subset(res1, padj < 0.1)
 resSig1 <- resSig1[order(resSig1$log2FoldChange, decreasing=T), ]
 head(resSig1)
+#RIPROVA CON UN NUOVO padj<0.05
 
 # Show significant effects of treatment on gene counts more than doubling or less than halfing
 resLFC1 <- results(dds1, lfcThreshold=1)
 table(resLFC1$padj < 0.1)
 
+#PLOT RESULTS:
+topGenes<-rownames(res1[order(res1$padj),])
+plotCounts(dds1, gene=topGenes[1], intgroup=c("Disease"))
+
+plotCounts(dds1, gene=topGenes[2], intgroup=c("Disease"))
+#no
+
+plotCounts(dds1, gene=topGenes[3], intgroup=c("Disease"))
+#no
+
+plotCounts(dds1, gene=topGenes[4], intgroup=c("Disease"))
+#no
+
+plotCounts(dds1, gene=topGenes[5], intgroup=c("Disease"))
+#ok
+
+plotCounts(dds1, gene=topGenes[6], intgroup=c("Disease"))
+#ok
+
+plotCounts(dds1, gene=topGenes[7], intgroup=c("Disease"))
+#ok
+
+#PLOT CON DISEASE.STATE:
+geneCounts <- plotCounts(dds1, gene=topGenes[1], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + 
+  geom_point(position=position_jitter(width=.1,height=0), size=3)
+
+geneCounts <- plotCounts(dds1, gene=topGenes[2], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + 
+  geom_point(position=position_jitter(width=.1,height=0), size=3)
+
+geneCounts <- plotCounts(dds1, gene=topGenes[3], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + 
+  geom_point(position=position_jitter(width=.1,height=0), size=3)
+
+geneCounts <- plotCounts(dds1, gene=topGenes[4], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + 
+  geom_point(position=position_jitter(width=.1,height=0), size=3)
+
+geneCounts <- plotCounts(dds1, gene=topGenes[5], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + 
+  geom_point(position=position_jitter(width=.1,height=0), size=3)
+
+geneCounts <- plotCounts(dds1, gene=topGenes[6], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts, aes(x=Disease.State, y=count, color= Disease.State)) +
+  scale_y_log10() + 
+  geom_point(position=position_jitter(width=.1,height=0), size=3)
+
+
+#PLOT MA: CHIEDI
+#Il grafico di plotMA in R è utilizzato per visualizzare i risultati dell'analisi di espressione genica differenziale tra due condizioni sperimentali. Il grafico rappresenta l'andamento del rapporto di espressione tra le due condizioni (log fold change) in funzione dell'abbondanza di espressione media tra le due condizioni (media degli intensità di segnale) sono basati su informazioni che sono teoricamente equivalenti tra le due condizioni sperimentali. In altre parole, non ci dovrebbe essere un'influenza sistematica della media degli intensità di segnale su log fold change. Pertanto, in un esperimento di espressione genica differenziale ben progettato, ci si aspetta che il grafico di plotMA sia simmetrico intorno all'asse orizzontale che rappresenta il valore di log fold change = 0. Una deviazione da questa simmetria potrebbe indicare la presenza di effetti sistematici o di bias nell'esperimento.
+
+resultsNames(dds1)
+resprova1 <- results(dds1, contrast = list("Disease_Healthy.Control_vs_Crohn.s.Disease" ))
+plotMA(resprova1, ylim=c(-5,5))
+
+resprova2 <- results(dds1, contrast = list("Gender_male_vs_female"))
+plotMA(resprova2, ylim=c(-5,5))
+
+
+resprova3 <- results(dds1, contrast = list("Age.Level_.40.80._vs_.17.40."))
+plotMA(resprova3, ylim=c(-5,5))
+
+
+#HISTOGRAM OF PVALUES DISTRIBUTION:
+hist(res1$pvalue[res1$baseMean > 1], breaks=0:20/20, col="royalblue4", border="white")
+
+#PVALUE CORRECTION:
+# remove filtered out genes by independent filtering,
+# they have NA adj. pvals
+res1 <- res1[ !is.na(res1$padj),] 
+
+# remove genes with NA pvals (outliers)
+res1 <- res1[ !is.na(res1$pvalue), ]
+
+# remove adjsuted pvalues, since we add the fdrtool results later on
+res1 <- res1[, -which(names(res1) == "padj")]
+
+# use z-scores as input to FDRtool to re-estimate the p-value
+res_fdr <- fdrtool(res1$stat, statistic= "normal", plot = T)
+
+# add values to the results data frame, also ad new BH- adjusted p-values
+res1[,"padj"] <- p.adjust(res_fdr$pval, method = "BH")
+
+# plot correct p-value distribution 
+hist(res_fdr$pval, col = "royalblue4", xlab = "CORRECTED p-values")
+
+#GENE CLUSTERING:
+topVarGenes <- head(order(rowVars(assay(rld1)),decreasing=TRUE),20) #rowVars takes the variance of each gene  among the samples, in each row.
+
+mat <- assay(rld1)[topVarGenes, ]
+mat <- mat - rowMeans(mat)
+df_clust <- as.data.frame(colData(rld1)[,c("Disease","Gender")])
+pheatmap(mat, annotation_col=df_clust)
+
+#EXPORTING RESULTS:
+#resOrderedDF <- as.data.frame(res)[1:100,]
+#write.csv(resOrderedDF, file="results.csv")
+
+
 #Enrichment (da sistemare)
-gene.sym <- bitr(row.names(res1), fromType = 'ENSEMBL', toType = 'SYMBOL', OrgDb = org.Hs.eg.db)
+gene.sym <- bitr(row.names(res1), fromType = 'ENSEMBL', toType = 'ENTREZID', OrgDb = org.Hs.eg.db)
 
 #geneList_DESeq1 <- resSig1$log2FoldChange
 #names(geneList_DESeq1) <- row.names(resSig1)
