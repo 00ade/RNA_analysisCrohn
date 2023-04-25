@@ -169,31 +169,66 @@ pheatmap(mat1, annotation_col=df_clust1)
 #write.csv(resOrderedDF, file="results.csv")
 
 
-#Enrichment (da sistemare)
+#Enrichment
 geneList_DESeq1 <- resSig1$log2FoldChange
 names(geneList_DESeq1) <- rownames(resSig1)
-ego1 <- enrichGO(gene = names(geneList_DESeq1), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+
+#Gene Ontology (GO)
+#ALL
+ego1ALL <- enrichGO(gene = names(geneList_DESeq1), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "ALL", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+                
+head(ego1ALL)  
+
+#Molecular Function (top)
+ego1MF <- enrichGO(gene = names(geneList_DESeq1), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "MF", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+
+head(ego1MF)
+goplot(ego1MF)
+
+#Cellular Components
+ego1CC <- enrichGO(gene = names(geneList_DESeq1), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
                 ont = "CC", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
                 readable = T)
                 
-head(ego1)  
+head(ego1CC)
+goplot(ego1CC)
 
-goplot(ego1)
+#Biological Process
+ego1BP <- enrichGO(gene = names(geneList_DESeq1), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "BP", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+
+head(ego1BP)
+goplot(ego1BP)
 
 
-gene.sym <- bitr(row.names(res1), fromType = 'ENSEMBL', toType = 'ENTREZID', OrgDb = org.Hs.eg.db)
+# Kyoto Encyclopedia of Genes and Genomes (KEGG)
+# Convert ENSEMBL in ENTREZID
 
-#geneList_DESeq1 <- resSig1$log2FoldChange
-#names(geneList_DESeq1) <- row.names(resSig1)
-#kk1 <- gseKEGG(geneList = geneList_DESeq1, organism = 'hsa', keyType = "ENSEMBL", pvalueCutoff = 0.1, verbose = FALSE)
-#head(kk1)
+gene_df1 <- bitr(names(geneList_DESeq1), fromType = "ENSEMBL", toType = "ENTREZID", 
+                OrgDb = org.Hs.eg.db)
+                
+geneList_df1 <- resSig1$log2FoldChange    
+names(geneList_df1) <- gene_df1$ENTREZID
+
+kk1 <- gseKEGG(geneList     = geneList_df1, organism = 'hsa', minGSSize = 1,
+               pvalueCutoff = 0.1, pAdjustMethod = "BH", verbose = FALSE)
+
+kk1 <- enrichKEGG(gene = gene_df1$ENTREZID, organism = 'hsa', pvalueCutoff = 0.1)
+
+head(kk1)
+
 
 
 #---------------------------------------------------------------------------------------------------------------
 
 
 #INTER
-dds2 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease.State)
+dds2 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level  + Disease.State)
 
 # log
 rld2 <- rlog(dds2, blind=FALSE)
@@ -313,6 +348,58 @@ pheatmap(mat2, annotation_col=df_clust2)
 #resOrderedDF <- as.data.frame(res)[1:100,]
 #write.csv(resOrderedDF, file="results.csv")
 
+#Enrichment
+geneList_DESeq2 <- resSig2$log2FoldChange
+names(geneList_DESeq2) <- rownames(resSig2)
+
+#Gene Ontology (GO)
+#ALL
+ego2ALL <- enrichGO(gene = names(geneList_DESeq2), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "ALL", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+                
+head(ego2ALL)  
+
+#Molecular Function (top)
+ego2MF <- enrichGO(gene = names(geneList_DESeq2), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "MF", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+
+head(ego2MF)
+goplot(ego2MF)
+
+#Cellular Components
+ego2CC <- enrichGO(gene = names(geneList_DESeq2), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "CC", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+                
+head(ego2CC)
+goplot(ego2CC)
+
+#Biological Process
+ego2BP <- enrichGO(gene = names(geneList_DESeq2), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "BP", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+
+head(ego2BP)
+goplot(ego2BP)
+
+
+# Kyoto Encyclopedia of Genes and Genomes (KEGG)
+# Convert ENSEMBL in ENTREZID
+
+gene_df2 <- bitr(names(geneList_DESeq2), fromType = "ENSEMBL", toType = "ENTREZID", 
+                OrgDb = org.Hs.eg.db)
+                
+geneList_df2 <- resSig2$log2FoldChange    
+names(geneList_df2) <- gene_df2$ENTREZID
+
+kk2 <- gseKEGG(geneList     = geneList_df2, organism = 'hsa', minGSSize = 120,
+               pvalueCutoff = 0.1, pAdjustMethod = "BH", verbose = FALSE)
+
+kk2 <- enrichKEGG(gene = gene_df2$ENTREZID, organism = 'hsa', pvalueCutoff = 0.1)
+
+head(kk2)
 
 
 #---------------------------------------------------------------------------------------------------------------
