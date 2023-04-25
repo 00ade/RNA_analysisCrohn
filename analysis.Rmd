@@ -170,6 +170,17 @@ pheatmap(mat1, annotation_col=df_clust1)
 
 
 #Enrichment (da sistemare)
+geneList_DESeq1 <- resSig1$log2FoldChange
+names(geneList_DESeq1) <- rownames(resSig1)
+ego1 <- enrichGO(gene = names(geneList_DESeq1), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "CC", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+                
+head(ego1)  
+
+goplot(ego1)
+
+
 gene.sym <- bitr(row.names(res1), fromType = 'ENSEMBL', toType = 'ENTREZID', OrgDb = org.Hs.eg.db)
 
 #geneList_DESeq1 <- resSig1$log2FoldChange
