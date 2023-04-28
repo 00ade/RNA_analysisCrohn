@@ -4,6 +4,8 @@ if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install("genefilter")
 
+BiocManager::install("ashr")
+library("ashr")
 
 library(SummarizedExperiment)
 library(ggplot2)
@@ -14,6 +16,9 @@ library(org.Hs.eg.db)
 library(fdrtool)
 library(DESeq2)
 library("genefilter")
+library(limma)
+
+setwd("C:/Users/122002/Desktop/VERONA/Programming_for_bioinf/RNA_analysisCrohn/data/GENDX000019")
 
 #Load the gene expression matrix
 df <- read.delim("GENDX000019_GeneMatrix_rawCounts.txt", row.names=1)
@@ -47,7 +52,6 @@ rld1 <- rlog(dds1, blind=FALSE)
 #PCA: La PCA (Principal Component Analysis) è una tecnica di analisi statistica multivariata che mira a identificare i fattori principali (o le componenti principali) che spiegano la maggior parte della varianza dei dati. In pratica, la PCA cerca di trovare un set di nuove variabili che siano una combinazione lineare dei dati originali, in modo che la prima nuova variabile spieghi la massima varianza possibile, la seconda spieghi la massima varianza rimanente, e così via. I valori PC1 e PC2, nel grafico della PCA, sono i valori delle prime due componenti principali, ovvero le due variabili lineari che spiegano la maggior parte della varianza dei dati. Essi sono visualizzati come un grafico a dispersione bidimensionale, dove ogni punto rappresenta una osservazione (ad esempio, un campione di dati), e le coordinate di ogni punto corrispondono ai suoi valori per le componenti principali PC1 e PC2. Questo tipo di grafico è utile per visualizzare le relazioni tra le o osservazioni e per individuare eventuali pattern o cluster nei dati.
 
 #DOMANDA: riusciamo a ricavare la combinazione lineare che lui usa delle variabili?
-plotPCA(rld1, intgroup = c("Gender")) 
 plotPCA(rld1, intgroup = c("Age.Level")) 
 plotPCA(rld1, intgroup = c("Disease"))
 plotPCA(rld1, intgroup = c("Disease", "Disease.State"))
@@ -156,13 +160,25 @@ res1[,"padj"] <- p.adjust(res_fdr1$pval, method = "BH")
 # plot correct p-value distribution 
 hist(res_fdr1$pval, col = "royalblue4", xlab = "CORRECTED p-values", border="white")
 
-#GENE CLUSTERING:
-topVarGenes1 <- head(order(rowVars(assay(rld1)),decreasing=TRUE),20) #rowVars takes the variance of each gene  among the samples, in each row.
+#GENE CLUSTERING and HEATMAP: chiedi
+topVarGenes1 <- head(order(rowVars(assay(rld1)),decreasing=TRUE),20) 
+#rowVars takes the variance of each gene  among the samples, in each row.
 
 mat1 <- assay(rld1)[topVarGenes1, ]
 mat1 <- mat1 - rowMeans(mat1)
-df_clust1 <- as.data.frame(colData(rld1)[,c("Disease","Gender")])
-pheatmap(mat1, annotation_col=df_clust1)
+#to normalize
+
+new_mat1 <- removeBatchEffect(mat1, batch= colData(rld1)$Gender) 
+
+#heatmap with both Gender and Disease clusters
+df_clust1 <- as.data.frame(colData(rld1)[,c("Gender","Disease")])
+pheatmap(new_mat1, annotation_col=df_clust1)
+
+#heatmap with Disease cluster only
+df_clust1 <- as.data.frame(colData(rld1)[,"Disease"])
+row.names(df_clust1) <- colnames(rld1)
+pheatmap(new_mat1, annotation_col=df_clust1)
+
 
 #EXPORTING RESULTS:
 #resOrderedDF <- as.data.frame(res)[1:100,]
@@ -208,27 +224,35 @@ goplot(ego1BP)
 
 # Kyoto Encyclopedia of Genes and Genomes (KEGG)
 # Convert ENSEMBL in ENTREZID
+resSig1_KEGG <- subset(res1, padj < 0.8)
+resSig1_KEGG <- resSig1_KEGG[order(resSig1_KEGG$log2FoldChange, decreasing=T), ]
 
-gene_df1 <- bitr(names(geneList_DESeq1), fromType = "ENSEMBL", toType = "ENTREZID", 
+geneList_DESeq1_1 <- resSig1_KEGG$log2FoldChange
+names(geneList_DESeq1_1) <- row.names(resSig1_KEGG)
+
+gene_df1 <- bitr(names(geneList_DESeq1_1), fromType = "ENSEMBL", toType = "ENTREZID", 
                 OrgDb = org.Hs.eg.db)
                 
-geneList_df1 <- resSig1$log2FoldChange    
+geneList_df1 <- resSig1_KEGG$log2FoldChange    
 names(geneList_df1) <- gene_df1$ENTREZID
 
-kk1 <- gseKEGG(geneList     = geneList_df1, organism = 'hsa', minGSSize = 1,
-               pvalueCutoff = 0.1, pAdjustMethod = "BH", verbose = FALSE)
+#kk1 <- gseKEGG(geneList     = geneList_df1, organism = 'hsa', minGSSize = 1,
+#               pvalueCutoff = 0.1, pAdjustMethod = "BH", verbose = FALSE)
 
 kk1 <- enrichKEGG(gene = gene_df1$ENTREZID, organism = 'hsa', pvalueCutoff = 0.1)
 
 head(kk1)
-
+browseKEGG(kk1, "hsa04630")
 
 
 #---------------------------------------------------------------------------------------------------------------
 
+metadata$Disease.State <- as.factor(metadata$Disease.State)
+metadata$Disease.State <- relevel(metadata$Disease.State, "non-inflamed")
+
 
 #INTER
-dds2 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level  + Disease.State)
+dds2 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level  + Development.Stage + Disease.State)
 
 # log
 rld2 <- rlog(dds2, blind=FALSE)
@@ -245,8 +269,22 @@ plotPCA(rld2, intgroup = c("Age.Level", "Disease"))
 dds2 <- DESeq(dds2)
 
 res2<-results(dds2)
-
 summary(res2)
+
+#SHRINKAGE
+resAsh <- lfcShrink(dds2, coef="Disease.State_inflamed_vs_non.inflamed", type="normal")
+resAsh
+
+resAsh <- subset(resAsh, padj < 0.1)
+resAsh <- resAsh[order(resAsh$log2FoldChange, decreasing=T), ]
+head(resAsh)
+
+#da evitare: LFC too high
+res21 <- results(dds2,contrast = c("Disease.State", "inflamed", "non-inflamed") )
+summary(res21)
+
+res2_sten_noninf <- results(dds2,contrast = c("Disease.State", "stenotic", "non.inflamed") )
+summary(res2_sten_noninf)
 
 
 # Show the significant genes with the strongest down or up regulation
@@ -254,8 +292,18 @@ resSig2 <- subset(res2, padj < 0.1)
 resSig2 <- resSig2[order(resSig2$log2FoldChange, decreasing=T), ]
 head(resSig2)
 
+resSig21 <- subset(res21, padj < 0.1)
+resSig21 <- resSig21[order(resSig21$log2FoldChange, decreasing=T), ]
+head(resSig21)
 
-# Show significant effects of treatment on gene counts more than doubling or less than halfing
+resSig2_sten_noninf <- subset(res2_sten_noninf, padj < 0.1)
+resSig2_sten_noninf <- resSig2_sten_noninf[order(resSig2_sten_noninf$log2FoldChange, decreasing=T), ]
+head(resSig2_sten_noninf)
+
+#too high LFC, so LFC shrinkage
+
+
+# Show significant effects of treatment on gene counts more than doubling or less than halfing: DA NON FARE, non ci sono geni che sono doppiamente espressi in una condizione rispetto un'altra
 resLFC2 <- results(dds2, lfcThreshold=1)
 table(resLFC2$padj < 0.1)
 
