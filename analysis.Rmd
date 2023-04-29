@@ -58,6 +58,7 @@ plotPCA(rld1, intgroup = c("Disease", "Disease.State"))
 plotPCA(rld1, intgroup = c("Gender", "Disease"))
 plotPCA(rld1, intgroup = c("Age.Level", "Disease"))
 
+#DESeq
 dds1 <- DESeq(dds1)
 
 res1<-results(dds1)
@@ -172,17 +173,9 @@ new_mat1 <- removeBatchEffect(mat1, batch= colData(rld1)$Gender)
 
 #heatmap with both Gender and Disease clusters
 df_clust1 <- as.data.frame(colData(rld1)[,c("Gender","Disease")])
+pheatmap(mat1, annotation_col=df_clust1)
+#heatmap without Batch Effect
 pheatmap(new_mat1, annotation_col=df_clust1)
-
-#heatmap with Disease cluster only
-df_clust1 <- as.data.frame(colData(rld1)[,"Disease"])
-row.names(df_clust1) <- colnames(rld1)
-pheatmap(new_mat1, annotation_col=df_clust1)
-
-
-#EXPORTING RESULTS:
-#resOrderedDF <- as.data.frame(res)[1:100,]
-#write.csv(resOrderedDF, file="results.csv")
 
 
 #Enrichment
@@ -265,42 +258,50 @@ plotPCA(rld2, intgroup = c("Disease", "Disease.State"))
 plotPCA(rld2, intgroup = c("Gender", "Disease"))
 plotPCA(rld2, intgroup = c("Age.Level", "Disease"))
 
-
+#DESeq
 dds2 <- DESeq(dds2)
 
 res2<-results(dds2)
 summary(res2)
-
-#SHRINKAGE
-resAsh <- lfcShrink(dds2, coef="Disease.State_inflamed_vs_non.inflamed", type="normal")
-resAsh
-
-resAsh <- subset(resAsh, padj < 0.1)
-resAsh <- resAsh[order(resAsh$log2FoldChange, decreasing=T), ]
-head(resAsh)
-
-#da evitare: LFC too high
-res21 <- results(dds2,contrast = c("Disease.State", "inflamed", "non-inflamed") )
-summary(res21)
-
-res2_sten_noninf <- results(dds2,contrast = c("Disease.State", "stenotic", "non.inflamed") )
-summary(res2_sten_noninf)
-
 
 # Show the significant genes with the strongest down or up regulation
 resSig2 <- subset(res2, padj < 0.1)
 resSig2 <- resSig2[order(resSig2$log2FoldChange, decreasing=T), ]
 head(resSig2)
 
-resSig21 <- subset(res21, padj < 0.1)
-resSig21 <- resSig21[order(resSig21$log2FoldChange, decreasing=T), ]
-head(resSig21)
+#SHRINKAGE
+#INF vs NINF
+res2_inf_noninf <- lfcShrink(dds2, coef="Disease.State_inflamed_vs_non.inflamed", type="normal")
 
-resSig2_sten_noninf <- subset(res2_sten_noninf, padj < 0.1)
-resSig2_sten_noninf <- resSig2_sten_noninf[order(resSig2_sten_noninf$log2FoldChange, decreasing=T), ]
-head(resSig2_sten_noninf)
+res2_inf_noninf <- subset(res2_inf_noninf, padj < 0.1)
+res2_inf_noninf <- res2_inf_noninf[order(res2_inf_noninf$log2FoldChange, decreasing=T), ]
+head(res2_inf_noninf)
 
-#too high LFC, so LFC shrinkage
+#STEN vs NINF
+res2_sten_noninf <- lfcShrink(dds2, coef = "Disease.State_stenotic_vs_non.inflamed", type = "normal")
+
+res2_sten_noninf <- subset(res2_sten_noninf, padj < 0.1)
+res2_sten_noninf <- res2_sten_noninf[order(res2_sten_noninf$log2FoldChange, decreasing=T), ]
+head(res2_sten_noninf)
+
+#STEN vs INF
+# We need to relevel Disease.State
+metadata$Disease.State1 <- as.factor(metadata$Disease.State)
+metadata$Disease.State1 <- relevel(metadata$Disease.State, "inflamed")
+
+dds2_SI <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level  + Development.Stage + Disease.State1)
+
+# log
+rld2_SI <- rlog(dds2_SI, blind=FALSE)
+
+#DESeq
+dds2_SI <- DESeq(dds2_SI)
+
+res2_sten_inf <- lfcShrink(dds2_SI, coef = "Disease.State1_stenotic_vs_inflamed", type = "normal")
+
+res2_sten_inf <- subset(res2_sten_inf, padj < 0.1)
+res2_sten_inf <- res2_sten_inf[order(res2_sten_inf$log2FoldChange, decreasing=T), ]
+head(res2_sten_inf)
 
 
 # Show significant effects of treatment on gene counts more than doubling or less than halfing: DA NON FARE, non ci sono geni che sono doppiamente espressi in una condizione rispetto un'altra
@@ -309,92 +310,111 @@ table(resLFC2$padj < 0.1)
 
 
 #PLOT RESULTS CON DISEASE.STATE:
-topGenes2<-rownames(res2[order(res2$padj),])
-plotCounts(dds2, gene=topGenes2[1], intgroup=c("Disease.State"))
-# Stenotic differentially expressed w.r.t other groups
+#INF vs NINF
+topGenes2_IN<-rownames(res2_inf_noninf[order(res2_inf_noninf$padj),])
+geneCounts2_IN <- plotCounts(dds2, gene=topGenes2_IN[1], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts2_IN, aes(x=Disease.State, y=count, fill=Disease.State)) +
+  scale_y_log10() + 
+  geom_dotplot(binaxis="y", stackdir="center")
 
-plotCounts(dds2, gene=topGenes2[2], intgroup=c("Disease.State"))
-#no
+#STEN vs NINF
+topGenes2_SN<-rownames(res2_sten_noninf[order(res2_sten_noninf$padj),])
+geneCounts2_SN <- plotCounts(dds2, gene=topGenes2_SN[1], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts2_SN, aes(x=Disease.State, y=count, fill=Disease.State)) +
+  scale_y_log10() + 
+  geom_dotplot(binaxis="y", stackdir="center")
 
-plotCounts(dds2, gene=topGenes2[3], intgroup=c("Disease.State"))
-# Stenotic differentially expressed w.r.t other groups
 
+#STEN vs INF
+topGenes2_SI<-rownames(res2_sten_inf[order(res2_sten_inf$padj),])
+geneCounts2_SI <- plotCounts(dds2_SI, gene=topGenes2_SI[1], intgroup=c("Disease.State"), returnData=T)
+ggplot(geneCounts2_SI, aes(x=Disease.State, y=count, fill=Disease.State)) +
+  scale_y_log10() + 
+  geom_dotplot(binaxis="y", stackdir="center")
 
-#PLOT CON DISEASE:
-geneCounts2 <- plotCounts(dds2, gene=topGenes2[1], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-# No differences
-
-geneCounts2 <- plotCounts(dds2, gene=topGenes2[2], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-# Good
-  
-geneCounts2 <- plotCounts(dds2, gene=topGenes2[3], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-# No
-  
-geneCounts2 <- plotCounts(dds2, gene=topGenes2[4], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-  
-geneCounts2 <- plotCounts(dds2, gene=topGenes2[5], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-  
-geneCounts2 <- plotCounts(dds2, gene=topGenes2[6], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts2, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-  
 
 #PLOT MA:
-resultsNames(dds2)
-resprova1 <- results(dds2, contrast = list("Disease.State_stenotic_vs_." ))
-plotMA(resprova1, ylim=c(-5,5))
+#INF vs NINF
+res2_IN <- results(dds2, contrast = list("Disease.State_inflamed_vs_non.inflamed"))
+DESeq2::plotMA(res2_IN)
 
-resprova2 <- results(dds2, contrast = list("Disease.State_inflamed_vs_."))
-plotMA(resprova2, ylim=c(-5,5))
+#STEN vs NINF
+res2_SN <- results(dds2, contrast = list("Disease.State_stenotic_vs_non.inflamed"))
+DESeq2::plotMA(res2_SN)
 
-
-resprova3 <- results(dds2, contrast = list("Disease.State_non.inflamed_vs_."))
-plotMA(resprova3, ylim=c(-5,5))
+#STEN vs INF
+res2_SI <- results(dds2_SI, contrast = list("Disease.State1_stenotic_vs_inflamed"))
+DESeq2::plotMA(res2_SI)
 
 
 #HISTOGRAM OF PVALUES DISTRIBUTION:
-hist(res2$pvalue[res2$baseMean > 1], breaks=0:20/20, col="royalblue4", border="white")
+#INF vs NINF
+hist(res2_IN$pvalue[res2_IN$baseMean > 1], breaks=0:20/20, col="royalblue4", border="white", main = "INF vs NINF", xlab = "p-values")
 
 #PVALUE CORRECTION:
-
 # remove filtered out genes by independent filtering,
 # they have NA adj. pvals
-res2 <- res2[ !is.na(res2$padj),] 
+res2_IN <- res2_IN[ !is.na(res2_IN$padj),] 
 # remove genes with NA pvals (outliers)
-res2 <- res2[ !is.na(res2$pvalue), ]
+res2_IN <- res2_IN[ !is.na(res2_IN$pvalue), ]
 # remove adjsuted pvalues, since we add the fdrtool results later on
-res2 <- res2[, -which(names(res2) == "padj")]
+res2_IN <- res2_IN[, -which(names(res2_IN) == "padj")]
 
 # use z-scores as input to FDRtool to re-estimate the p-value
-res_fdr2 <- fdrtool(res2$stat, statistic= "normal", plot = T)
+res_fdr2_IN <- fdrtool(res2_IN$stat, statistic= "normal", plot = F)
 
 # add values to the results data frame, also ad new BH- adjusted p-values
-res2[,"padj"] <- p.adjust(res_fdr2$pval, method = "BH")
+res2_IN[,"padj"] <- p.adjust(res_fdr2_IN$pval, method = "BH")
 
 # plot correct p-value distribution 
-hist(res_fdr2$pval, col = "royalblue4", xlab = "CORRECTED p-values", border="white")
+hist(res_fdr2_IN$pval, col = "royalblue4", main = "INF vs NINF", xlab = "CORRECTED p-values", border="white")
 
-#GENE CLUSTERING:
-topVarGenes2 <- head(order(rowVars(assay(rld2)),decreasing=TRUE),20) #rowVars takes the variance of each gene  among the samples, in each row.
+#STEN vs NINF
+hist(res2_SN$pvalue[res2_SN$baseMean > 1], breaks=0:20/20, col="royalblue4", border="white", main = "STEN vs NINF", xlab = "p-values")
+#PVALUE CORRECTION:
+res2_SN <- res2_SN[ !is.na(res2_SN$padj),] 
+res2_SN <- res2_SN[ !is.na(res2_SN$pvalue), ]
+res2_SN <- res2_SN[, -which(names(res2_SN) == "padj")]
+res_fdr2_SN <- fdrtool(res2_SN$stat, statistic= "normal", plot = F)
+res2_SN[,"padj"] <- p.adjust(res_fdr2_SN$pval, method = "BH")
 
+hist(res_fdr2_SN$pval, col = "royalblue4", main = "STEN vs NINF", xlab = "CORRECTED p-values", border="white")
+
+#STEN vs INF
+hist(res2_SI$pvalue[res2_SI$baseMean > 1], breaks=0:20/20, col="royalblue4", border="white", main = "STEN vs INF", xlab = "p-values")
+#PVALUE CORRECTION:
+res2_SI <- res2_SI[ !is.na(res2_SI$padj),] 
+res2_SI <- res2_SI[ !is.na(res2_SI$pvalue), ]
+res2_SI <- res2_SI[, -which(names(res2_SI) == "padj")]
+res_fdr2_SI <- fdrtool(res2_SI$stat, statistic= "normal", plot = F)
+res2_SI[,"padj"] <- p.adjust(res_fdr2_SI$pval, method = "BH")
+
+hist(res_fdr2_SI$pval, col = "royalblue4", main = "STEN vs INF", xlab = "CORRECTED p-values", border="white")
+
+#GENE CLUSTERING and HEATMAP:
+topVarGenes2 <- head(order(rowVars(assay(rld2)),decreasing=TRUE),20) 
+#rowVars takes the variance of each gene  among the samples, in each row.
 mat2 <- assay(rld2)[topVarGenes2, ]
 mat2 <- mat2 - rowMeans(mat2)
-df_clust2 <- as.data.frame(colData(rld2)[,c("Disease.State","Gender")])
-pheatmap(mat2, annotation_col=df_clust2)
+#to normalize
+new_mat2 <- removeBatchEffect(mat2, batch= colData(rld2)$Gender) 
 
-#EXPORTING RESULTS:
-#resOrderedDF <- as.data.frame(res)[1:100,]
-#write.csv(resOrderedDF, file="results.csv")
+#heatmap with both Gender and Disease clusters
+df_clust2 <- as.data.frame(colData(rld2)[,c("Gender","Disease.State")])
+pheatmap(new_mat2, annotation_col=df_clust2)
+
+#referring to INF
+topVarGenes2_SI <- head(order(rowVars(assay(rld2_SI)),decreasing=TRUE),20) 
+#rowVars takes the variance of each gene  among the samples, in each row.
+mat2_SI <- assay(rld2_SI)[topVarGenes2_SI, ]
+mat2_SI <- mat2_SI - rowMeans(mat2_SI)
+#to normalize
+new_mat2_SI <- removeBatchEffect(mat2_SI, batch= colData(rld2_SI)$Gender) 
+
+#heatmap with both Gender and Disease clusters
+df_clust2_SI <- as.data.frame(colData(rld2_SI)[,c("Gender","Disease.State")])
+pheatmap(new_mat2_SI, annotation_col=df_clust2_SI)
+
 
 #Enrichment
 geneList_DESeq2 <- resSig2$log2FoldChange
