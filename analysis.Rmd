@@ -5,7 +5,7 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install("genefilter")
 
 BiocManager::install("ashr")
-library("ashr")
+
 
 library(SummarizedExperiment)
 library(ggplot2)
@@ -17,6 +17,7 @@ library(fdrtool)
 library(DESeq2)
 library("genefilter")
 library(limma)
+library("ashr")
 
 setwd("C:/Users/122002/Desktop/VERONA/Programming_for_bioinf/RNA_analysisCrohn/data/GENDX000019")
 
@@ -123,19 +124,17 @@ ggplot(geneCounts1, aes(x=Disease.State, y=count, color= Disease.State)) +
   scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
 
 
-#PLOT MA: CHIEDI
-#Il grafico di plotMA in R è utilizzato per visualizzare i risultati dell'analisi di espressione genica differenziale tra due condizioni sperimentali. Il grafico rappresenta l'andamento del rapporto di espressione tra le due condizioni (log fold change) in funzione dell'abbondanza di espressione media tra le due condizioni (media degli intensità di segnale) sono basati su informazioni che sono teoricamente equivalenti tra le due condizioni sperimentali. In altre parole, non ci dovrebbe essere un'influenza sistematica della media degli intensità di segnale su log fold change. Pertanto, in un esperimento di espressione genica differenziale ben progettato, ci si aspetta che il grafico di plotMA sia simmetrico intorno all'asse orizzontale che rappresenta il valore di log fold change = 0. Una deviazione da questa simmetria potrebbe indicare la presenza di effetti sistematici o di bias nell'esperimento.
-
+#PLOT MA:
 resultsNames(dds1)
 resprova1 <- results(dds1, contrast = list("Disease_Healthy.Control_vs_Crohn.s.Disease" ))
-plotMA(resprova1, ylim=c(-5,5))
+DESeq2::plotMA(resprova1, ylim=c(-5,5))
 
 resprova2 <- results(dds1, contrast = list("Gender_male_vs_female"))
-plotMA(resprova2, ylim=c(-5,5))
+DESeq2::plotMA(resprova2, ylim=c(-5,5))
 
 
 resprova3 <- results(dds1, contrast = list("Age.Level_.40.80._vs_.17.40."))
-plotMA(resprova3, ylim=c(-5,5))
+DESeq2::plotMA(resprova3, ylim=c(-5,5))
 
 
 #HISTOGRAM OF PVALUES DISTRIBUTION:
@@ -144,24 +143,24 @@ hist(res1$pvalue[res1$baseMean > 1], breaks=0:20/20, col="royalblue4", border="w
 #PVALUE CORRECTION:
 # remove filtered out genes by independent filtering,
 # they have NA adj. pvals
-res1 <- res1[ !is.na(res1$padj),] 
+res1_corr <- res1[ !is.na(res1$padj),] 
 
 # remove genes with NA pvals (outliers)
-res1 <- res1[ !is.na(res1$pvalue), ]
+res1_corr <- res1_corr[ !is.na(res1_corr$pvalue), ]
 
 # remove adjsuted pvalues, since we add the fdrtool results later on
-res1 <- res1[, -which(names(res1) == "padj")]
+res1_corr <- res1_corr[, -which(names(res1_corr) == "padj")]
 
 # use z-scores as input to FDRtool to re-estimate the p-value
-res_fdr1 <- fdrtool(res1$stat, statistic= "normal", plot = T)
+res_fdr1 <- fdrtool(res1_corr$stat, statistic= "normal", plot = T)
 
 # add values to the results data frame, also ad new BH- adjusted p-values
-res1[,"padj"] <- p.adjust(res_fdr1$pval, method = "BH")
+res1_corr[,"padj"] <- p.adjust(res_fdr1$pval, method = "BH")
 
 # plot correct p-value distribution 
 hist(res_fdr1$pval, col = "royalblue4", xlab = "CORRECTED p-values", border="white")
 
-#GENE CLUSTERING and HEATMAP: chiedi
+#GENE CLUSTERING and HEATMAP:
 topVarGenes1 <- head(order(rowVars(assay(rld1)),decreasing=TRUE),20) 
 #rowVars takes the variance of each gene  among the samples, in each row.
 
@@ -229,9 +228,6 @@ gene_df1 <- bitr(names(geneList_DESeq1_1), fromType = "ENSEMBL", toType = "ENTRE
 geneList_df1 <- resSig1_KEGG$log2FoldChange    
 names(geneList_df1) <- gene_df1$ENTREZID
 
-#kk1 <- gseKEGG(geneList     = geneList_df1, organism = 'hsa', minGSSize = 1,
-#               pvalueCutoff = 0.1, pAdjustMethod = "BH", verbose = FALSE)
-
 kk1 <- enrichKEGG(gene = gene_df1$ENTREZID, organism = 'hsa', pvalueCutoff = 0.1)
 
 head(kk1)
@@ -296,6 +292,9 @@ rld2_SI <- rlog(dds2_SI, blind=FALSE)
 
 #DESeq
 dds2_SI <- DESeq(dds2_SI)
+res2_SI <- results(dds2_SI)
+resSig2_SI <- subset(res2_SI, padj < 0.1)
+resSig2_SI <- resSig2_SI[order(resSig2_SI$log2FoldChange, decreasing=T), ]
 
 res2_sten_inf <- lfcShrink(dds2_SI, coef = "Disease.State1_stenotic_vs_inflamed", type = "normal")
 
@@ -335,16 +334,16 @@ ggplot(geneCounts2_SI, aes(x=Disease.State, y=count, fill=Disease.State)) +
 
 #PLOT MA:
 #INF vs NINF
-res2_IN <- results(dds2, contrast = list("Disease.State_inflamed_vs_non.inflamed"))
-DESeq2::plotMA(res2_IN)
+res2_IN_MA <- results(dds2, contrast = list("Disease.State_inflamed_vs_non.inflamed"))
+DESeq2::plotMA(res2_IN_MA)
 
 #STEN vs NINF
-res2_SN <- results(dds2, contrast = list("Disease.State_stenotic_vs_non.inflamed"))
-DESeq2::plotMA(res2_SN)
+res2_SN_MA <- results(dds2, contrast = list("Disease.State_stenotic_vs_non.inflamed"))
+DESeq2::plotMA(res2_SN_MA)
 
 #STEN vs INF
-res2_SI <- results(dds2_SI, contrast = list("Disease.State1_stenotic_vs_inflamed"))
-DESeq2::plotMA(res2_SI)
+res2_SI_MA <- results(dds2_SI, contrast = list("Disease.State1_stenotic_vs_inflamed"))
+DESeq2::plotMA(res2_SI_MA)
 
 
 #HISTOGRAM OF PVALUES DISTRIBUTION:
@@ -354,17 +353,17 @@ hist(res2_IN$pvalue[res2_IN$baseMean > 1], breaks=0:20/20, col="royalblue4", bor
 #PVALUE CORRECTION:
 # remove filtered out genes by independent filtering,
 # they have NA adj. pvals
-res2_IN <- res2_IN[ !is.na(res2_IN$padj),] 
+res2_IN_corr <- res2_IN[ !is.na(res2_IN$padj),] 
 # remove genes with NA pvals (outliers)
-res2_IN <- res2_IN[ !is.na(res2_IN$pvalue), ]
+res2_IN_corr <- res2_IN_corr[ !is.na(res2_IN_corr$pvalue), ]
 # remove adjsuted pvalues, since we add the fdrtool results later on
-res2_IN <- res2_IN[, -which(names(res2_IN) == "padj")]
+res2_IN_corr <- res2_IN_corr[, -which(names(res2_IN_corr) == "padj")]
 
 # use z-scores as input to FDRtool to re-estimate the p-value
-res_fdr2_IN <- fdrtool(res2_IN$stat, statistic= "normal", plot = F)
+res_fdr2_IN<- fdrtool(res2_IN_corr$stat, statistic= "normal", plot = F)
 
 # add values to the results data frame, also ad new BH- adjusted p-values
-res2_IN[,"padj"] <- p.adjust(res_fdr2_IN$pval, method = "BH")
+res2_IN_corr[,"padj"] <- p.adjust(res_fdr2_IN$pval, method = "BH")
 
 # plot correct p-value distribution 
 hist(res_fdr2_IN$pval, col = "royalblue4", main = "INF vs NINF", xlab = "CORRECTED p-values", border="white")
@@ -372,22 +371,22 @@ hist(res_fdr2_IN$pval, col = "royalblue4", main = "INF vs NINF", xlab = "CORRECT
 #STEN vs NINF
 hist(res2_SN$pvalue[res2_SN$baseMean > 1], breaks=0:20/20, col="royalblue4", border="white", main = "STEN vs NINF", xlab = "p-values")
 #PVALUE CORRECTION:
-res2_SN <- res2_SN[ !is.na(res2_SN$padj),] 
-res2_SN <- res2_SN[ !is.na(res2_SN$pvalue), ]
-res2_SN <- res2_SN[, -which(names(res2_SN) == "padj")]
-res_fdr2_SN <- fdrtool(res2_SN$stat, statistic= "normal", plot = F)
-res2_SN[,"padj"] <- p.adjust(res_fdr2_SN$pval, method = "BH")
+res2_SN_corr <- res2_SN[ !is.na(res2_SN$padj),] 
+res2_SN_corr <- res2_SN_corr[ !is.na(res2_SN_corr$pvalue), ]
+res2_SN_corr <- res2_SN_corr[, -which(names(res2_SN_corr) == "padj")]
+res_fdr2_SN <- fdrtool(res2_SN_corr$stat, statistic= "normal", plot = F)
+res2_SN_corr[,"padj"] <- p.adjust(res_fdr2_SN$pval, method = "BH")
 
 hist(res_fdr2_SN$pval, col = "royalblue4", main = "STEN vs NINF", xlab = "CORRECTED p-values", border="white")
 
 #STEN vs INF
 hist(res2_SI$pvalue[res2_SI$baseMean > 1], breaks=0:20/20, col="royalblue4", border="white", main = "STEN vs INF", xlab = "p-values")
 #PVALUE CORRECTION:
-res2_SI <- res2_SI[ !is.na(res2_SI$padj),] 
-res2_SI <- res2_SI[ !is.na(res2_SI$pvalue), ]
-res2_SI <- res2_SI[, -which(names(res2_SI) == "padj")]
-res_fdr2_SI <- fdrtool(res2_SI$stat, statistic= "normal", plot = F)
-res2_SI[,"padj"] <- p.adjust(res_fdr2_SI$pval, method = "BH")
+res2_SI_corr <- res2_SI[ !is.na(res2_SI$padj),] 
+res2_SI_corr <- res2_SI_corr[ !is.na(res2_SI_corr$pvalue), ]
+res2_SI_corr <- res2_SI_corr[, -which(names(res2_SI_corr) == "padj")]
+res_fdr2_SI <- fdrtool(res2_SI_corr$stat, statistic= "normal", plot = F)
+res2_SI_corr[,"padj"] <- p.adjust(res_fdr2_SI$pval, method = "BH")
 
 hist(res_fdr2_SI$pval, col = "royalblue4", main = "STEN vs INF", xlab = "CORRECTED p-values", border="white")
 
@@ -403,7 +402,7 @@ new_mat2 <- removeBatchEffect(mat2, batch= colData(rld2)$Gender)
 df_clust2 <- as.data.frame(colData(rld2)[,c("Gender","Disease.State")])
 pheatmap(new_mat2, annotation_col=df_clust2)
 
-#referring to INF
+#Referring to INF
 topVarGenes2_SI <- head(order(rowVars(assay(rld2_SI)),decreasing=TRUE),20) 
 #rowVars takes the variance of each gene  among the samples, in each row.
 mat2_SI <- assay(rld2_SI)[topVarGenes2_SI, ]
@@ -416,7 +415,8 @@ df_clust2_SI <- as.data.frame(colData(rld2_SI)[,c("Gender","Disease.State")])
 pheatmap(new_mat2_SI, annotation_col=df_clust2_SI)
 
 
-#Enrichment
+#ENRICHMENT
+#with resSig2
 geneList_DESeq2 <- resSig2$log2FoldChange
 names(geneList_DESeq2) <- rownames(resSig2)
 
@@ -462,138 +462,57 @@ gene_df2 <- bitr(names(geneList_DESeq2), fromType = "ENSEMBL", toType = "ENTREZI
 geneList_df2 <- resSig2$log2FoldChange    
 names(geneList_df2) <- gene_df2$ENTREZID
 
-kk2 <- gseKEGG(geneList     = geneList_df2, organism = 'hsa', minGSSize = 120,
-               pvalueCutoff = 0.1, pAdjustMethod = "BH", verbose = FALSE)
+
+kk2 <- enrichKEGG(gene = gene_df2$ENTREZID, organism = 'hsa', pvalueCutoff = 0.1)
+head(kk2)
+
+
+#with resSig2_SI
+geneList_DESeq2_SI <- resSig2_SI$log2FoldChange
+names(geneList_DESeq2_SI) <- rownames(resSig2_SI)
+
+#Gene Ontology (GO)
+#ALL
+ego2ALL_SI <- enrichGO(gene = names(geneList_DESeq2_SI), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "ALL", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+                
+head(ego2ALL_SI)  
+
+#Molecular Function (top)
+ego2MF_SI <- enrichGO(gene = names(geneList_DESeq2_SI), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "MF", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+
+head(ego2MF_SI)
+goplot(ego2MF_SI)
+
+#Cellular Components
+ego2CC_SI <- enrichGO(gene = names(geneList_DESeq2_SI), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "CC", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+                
+head(ego2CC_SI)
+goplot(ego2CC_SI)
+
+#Biological Process
+ego2BP_SI <- enrichGO(gene = names(geneList_DESeq2_SI), OrgDb = org.Hs.eg.db, keyType = 'ENSEMBL',
+                ont = "BP", pAdjustMethod = "BH", pvalueCutoff  = 0.1, 
+                readable = T)
+
+head(ego2BP_SI)
+goplot(ego2BP_SI)
+
+
+# Kyoto Encyclopedia of Genes and Genomes (KEGG)
+# Convert ENSEMBL in ENTREZID
+
+gene_df2_SI <- bitr(names(geneList_DESeq2_SI), fromType = "ENSEMBL", toType = "ENTREZID", 
+                OrgDb = org.Hs.eg.db)
+                
+geneList_df2_SI <- resSig2_SI$log2FoldChange    
+names(geneList_df2_SI) <- gene_df2_SI$ENTREZID
 
 kk2 <- enrichKEGG(gene = gene_df2$ENTREZID, organism = 'hsa', pvalueCutoff = 0.1)
 
 head(kk2)
-
-
-#---------------------------------------------------------------------------------------------------------------
-
-#ALL
-dds3 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease.State + Gender:Disease.State)
-
-# log
-rld3 <- rlog(dds3, blind=FALSE)
-
-# No plot changes according to different designs
-plotPCA(rld3, intgroup = c("Gender"))
-plotPCA(rld3, intgroup = c("Age.Level")) 
-plotPCA(rld3, intgroup = c("Disease"))
-plotPCA(rld3, intgroup = c("Disease", "Disease.State"))
-plotPCA(rld3, intgroup = c("Gender", "Disease"))
-plotPCA(rld3, intgroup = c("Age.Level", "Disease"))
-
-
-dds3 <- DESeq(dds3)
-
-res3<-results(dds3)
-
-summary(res3)
-
-
-# Show the significant genes with the strongest down or up regulation
-resSig3 <- subset(res3, padj < 0.1)
-resSig3 <- resSig3[order(resSig3$log2FoldChange, decreasing=T), ]
-head(resSig3)
-
-
-# Show significant effects of treatment on gene counts more than doubling or less than halfing
-resLFC3 <- results(dds3, lfcThreshold=1)
-table(resLFC3$padj < 0.1)
-
-
-#PLOT RESULTS CON DISEASE.STATE:
-topGenes3<-rownames(res3[order(res3$padj),])
-plotCounts(dds3, gene=topGenes3[1], intgroup=c("Disease.State"))
-# Stenotic differentially expressed w.r.t other groups
-
-plotCounts(dds3, gene=topGenes3[2], intgroup=c("Disease.State"))
-#no
-
-plotCounts(dds3, gene=topGenes3[3], intgroup=c("Disease.State"))
-# Stenotic differentially expressed w.r.t other groups
-
-
-#PLOT CON DISEASE:
-geneCounts3 <- plotCounts(dds3, gene=topGenes3[1], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-# No differences
-
-geneCounts3 <- plotCounts(dds3, gene=topGenes3[2], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-# Good
-  
-geneCounts3 <- plotCounts(dds3, gene=topGenes3[3], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-# No
-  
-geneCounts3 <- plotCounts(dds3, gene=topGenes3[4], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-  
-geneCounts3 <- plotCounts(dds3, gene=topGenes3[5], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-  
-geneCounts3 <- plotCounts(dds3, gene=topGenes3[6], intgroup=c("Disease"), returnData=T)
-ggplot(geneCounts3, aes(x=Disease, y=count, color= Disease)) +
-  scale_y_log10() + geom_point(position=position_jitter(width=.1,height=0), size=3)
-  
-
-#PLOT MA:
-resultsNames(dds3)
-resprova1 <- results(dds3, contrast = list("Gendermale.Disease.Statestenotic"))
-plotMA(resprova1, ylim=c(-5,5))
-
-resprova2 <- results(dds3, contrast = list("Gendermale.Disease.Stateinflamed"))
-plotMA(resprova2, ylim=c(-5,5))
-
-
-resprova3 <- results(dds3, contrast = list("Gendermale.Disease.Statenon.inflamed"))
-plotMA(resprova3, ylim=c(-5,5))
-
-
-#HISTOGRAM OF PVALUES DISTRIBUTION:
-hist(res3$pvalue[res3$baseMean > 1], breaks=0:20/20, col="royalblue4", border="white")
-
-#PVALUE CORRECTION:
-
-# remove filtered out genes by independent filtering,
-# they have NA adj. pvals
-res3 <- res3[ !is.na(res3$padj),] 
-# remove genes with NA pvals (outliers)
-res3 <- res3[ !is.na(res3$pvalue), ]
-# remove adjsuted pvalues, since we add the fdrtool results later on
-res3 <- res3[, -which(names(res3) == "padj")]
-
-# use z-scores as input to FDRtool to re-estimate the p-value
-res_fdr3 <- fdrtool(res3$stat, statistic= "normal", plot = T)
-
-# add values to the results data frame, also ad new BH- adjusted p-values
-res3[,"padj"] <- p.adjust(res_fdr3$pval, method = "BH")
-
-# plot correct p-value distribution 
-hist(res_fdr3$pval, col = "royalblue4", xlab = "CORRECTED p-values", border="white")
-
-#GENE CLUSTERING:
-topVarGenes3 <- head(order(rowVars(assay(rld3)),decreasing=TRUE),20) #rowVars takes the variance of each gene  among the samples, in each row.
-
-mat3 <- assay(rld3)[topVarGenes3, ]
-mat3 <- mat3 - rowMeans(mat3)
-df_clust3 <- as.data.frame(colData(rld3)[,c("Disease.State","Gender")])
-pheatmap(mat3, annotation_col=df_clust3)
-
-#EXPORTING RESULTS:
-#resOrderedDF <- as.data.frame(res)[1:100,]
-#write.csv(resOrderedDF, file="results.csv")
-
-        
-
-
-
