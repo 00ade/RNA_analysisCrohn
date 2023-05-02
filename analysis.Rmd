@@ -52,9 +52,9 @@ library("limma")
 library("ashr")
 ```
 
-Raw Counts matrix and corresponding metadata are uploaded. Genes were not considered if they had less than 1 count per million (CPM) in more than 11 samples.
-```{r}
-setwd("C:/Users/122002/Desktop/VERONA/Programming_for_bioinf/RNA_analysisCrohn/data/GENDX000019")
+Raw Counts matrix and corresponding metadata are uploaded. Genes are not considered if they have less than 1 count per million (CPM) in more than 11 samples.
+```{r,warning=FALSE,message=FALSE}
+setwd("C:/Users/Stefano/OneDrive - Politecnico di Bari/Documenti/Univr/Programming for bioinformatics/RNA_analysisCrohn/data/GENDX000019")
 df <- read.delim("GENDX000019_GeneMatrix_rawCounts.txt", row.names=1)
 metadata <- read.delim("GEND000019-meta.txt", row.names=5)
 
@@ -67,7 +67,7 @@ row.names(df1) <- substr(genes, 1, 15)
 head(df1)
 ```
 
-A new categorical metadata column is created from the continuous variable Age. Samples with age between 17 and 39 are assigned to one level, samples being 40 year old or more to the other.
+A new categorical metadata column is created from the continuous variable Age. Samples with age between 17 and 39 are assigned to one level, samples being 40 year old or more to the other one.
 ```{r}
 metadata$Age.Level <-  cut(metadata$Age, c(17, 40, 80))
 metadata[, c("Gender", "Disease", "Disease.State", "Age", "Age.Level")]
@@ -79,7 +79,8 @@ In order to investigate in deep the differential expression of genes, two differ
 The first one is focused in comparing **Healthy controls** vs **Chron's disease samples**, correcting for Gender, Age and Passage number (the number of times the cell culture has been subcultured).
 
 ```{r, message=FALSE, warning=FALSE}
-dds1 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level + Development.Stage + Disease)
+dds1 <- DESeqDataSetFromMatrix(df1, colData=metadata, 
+                               design = ~ Gender + Age.Level + Development.Stage + Disease)
 
 rld1 <- rlog(dds1, blind=FALSE)
 ```
@@ -102,7 +103,8 @@ dds1 <- DESeq(dds1)
 res1<-results(dds1)
 summary(res1)
 ```
-The genes that show a significant (padj < 0.1) up or down regulation are visualized in a log2FoldChange decreasing order.
+71 genes show a significant up or down regulation (padj < 0.1).
+They are now ordered by a log2FoldChange decreasing order.
 
 ```{r}
 resSig1 <- subset(res1, padj < 0.1)
@@ -121,7 +123,7 @@ summary(resLFC1)
 ### Plot results
 
 #### **Dot plots**
-With the function **plotCount()** a plot that shows the counts of sequencing reads for a particular gene of interest in each sample is produced. The genes selected are those presenting the smallest padj. 
+The function **plotCount()** shows the counts of sequencing reads for a particular gene of interest in each sample. The genes selected are those presenting the smallest padj. 
 
 ```{r}
 topGenes1<-rownames(res1[order(res1$padj, decreasing=F),])
@@ -131,7 +133,7 @@ plotCounts(dds1, gene=topGenes1[5], intgroup=c("Disease"))
 ```
 
 #### **MA plots**
-The graph represents the LFC as a function of the average expression between the two conditions, which are theoretically equivalent information between the two experimental conditions.
+The MA plot represents the LFC of the genes as a function of the average expression between the two conditions, which are theoretically equivalent information between the two experimental conditions.
 **Chiedi se vanno bene tutti e 3**
 ```{r}
 resultsNames(dds1)
@@ -151,6 +153,7 @@ An histogram of p-values distribution is plotted to investigate the reliability 
 ```{r}
 hist(res1$pvalue[res1$baseMean > 1], breaks=0:20/20, col="royalblue4", border="white", main = "CD vs non-CD", xlab = "p-values")
 ```
+
 
 Since a proper p-value distribution has a rectangular shape with a peak at 0, a correction is performed.
 
@@ -194,7 +197,7 @@ names(geneList_DESeq1) <- rownames(resSig1)
 
 #### **Gene Ontology (GO)**
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, message=FALSE}
 #Molecular Function
 ego1MF <- enrichGO(gene = names(geneList_DESeq1), OrgDb = org.Hs.eg.db,
                    keyType = 'ENSEMBL', ont = "MF", pAdjustMethod = "BH",
@@ -220,7 +223,7 @@ head(ego1BP)
 
 
 #### **Kyoto Encyclopedia of Genes and Genomes (KEGG)**
-In order to use the KEGG database, ENSEMBL ID are converted in ENTREZID. An higher p-value threshold (padj < 0.5) is needed because of the low number of DE genes present having a smaller p-value.
+In order to use the KEGG database, ENSEMBL ID are converted in ENTREZID. An higher p-value threshold (padj < 0.5) is needed because of the low number of DE genes having a smaller p-value.
 ```{r, message = FALSE, warning=FALSE}
 resSig1_KEGG <- subset(res1, padj < 0.5)
 resSig1_KEGG <- resSig1_KEGG[order(resSig1_KEGG$log2FoldChange, decreasing=T), ]
@@ -241,8 +244,11 @@ head(kk1)
 
 # DE analysis (IN, SN, SI)
 The second analysis is designed focusing on the differences due to the Disease State. In particular, 3 comparisons are carried out:
+
 - Inflamed vs Non-Inflamed
+
 - Stenotic vs Non-Inflamed
+
 - Stenotic vs Inflamed
 
 The Disease State variable is releveled. 
@@ -290,7 +296,11 @@ res2_SI <- results(dds2_SI)
 summary(res2_SI)
 ```
 
-The genes that show a significant (padj < 0.1) up or down regulation are visualized in a log2FoldChange decreasing order.
+For the non-inflamed reference level case, 462 genes show a significant up or down regulation (padj < 0.1). 
+
+For the inflamed reference level case, 13 genes show a significant up or down regulation (padj < 0.1).
+
+They are now ordered by a log2FoldChange decreasing order.
 ```{r}
 resSig2 <- subset(res2, padj < 0.1)
 resSig2 <- resSig2[order(resSig2$log2FoldChange, decreasing=T), ]
@@ -301,6 +311,7 @@ resSig2_SI <- resSig2_SI[order(resSig2_SI$log2FoldChange, decreasing=T), ]
 head(resSig2_SI)
 ```
 
+#### **Shrinkage**
 Too large log2FoldChange values suggest to perform **Shrinkage** for the 3 different comparisons.
 
 ```{r, message = FALSE, warning = FALSE}
@@ -341,7 +352,7 @@ summary(resLFC2)
 #### **Dot plots**
 The read counts of the gene with the smallest padj, one for each comparison, are plotted.
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 #INF vs NINF
 topGenes2_IN<-rownames(res2_inf_noninf[order(res2_inf_noninf$padj),])
 geneCounts2_IN <- plotCounts(dds2, gene=topGenes2_IN[1],
@@ -366,7 +377,7 @@ ggplot(geneCounts2_SI, aes(x=Disease.State, y=count, fill=Disease.State)) +
 
 
 #### **MA plots**
-The graph represents the LFC as a function of the average expression between the two conditions, which are theoretically equivalent information between the two experimental conditions.
+The MA plot represents the LFC of the genes as a function of the average expression between the two conditions, which are theoretically equivalent information between the two experimental conditions.
 
 ```{r}
 #INF vs NINF
@@ -452,43 +463,74 @@ pheatmap(new_mat2_SI, annotation_col=df_clust2_SI, main = "Disease.State - Gende
 ### Enrichment
 Once the differentially expressed genes have been identified, enrichment analysis can be used to identify the biological pathways, gene ontology terms, or functional categories that are more common in the list of DE genes.
 
-Enrichment analysis is performed using two databases: Gene Ontology (GO) and Kyoto Encyclopedia of Genes and Genomes (KEGG).
+Enrichment analysis is performed using two databases: **Gene Ontology (GO)** and **Kyoto Encyclopedia of Genes and Genomes (KEGG)**.
 ```{r}
-geneList_DESeq2 <- resSig2$log2FoldChange
-names(geneList_DESeq2) <- rownames(resSig2)
+geneList_DESeq2_IN <- res2_inf_noninf$log2FoldChange
+names(geneList_DESeq2_IN) <- rownames(res2_inf_noninf)
 
-geneList_DESeq2_SI <- resSig2_SI$log2FoldChange
-names(geneList_DESeq2_SI) <- rownames(resSig2_SI)
+geneList_DESeq2_SN <- res2_sten_noninf$log2FoldChange
+names(geneList_DESeq2_SN) <- rownames(res2_sten_noninf)
+
+
+geneList_DESeq2_SI <- res2_sten_inf$log2FoldChange
+names(geneList_DESeq2_SI) <- rownames(res2_sten_inf)
 ```
 
 #### **Gene Ontology (GO)**
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
+#INF VS NINF
 #Molecular Function
-ego2MF <- enrichGO(gene = names(geneList_DESeq2), OrgDb = org.Hs.eg.db,
+ego2MF_IN <- enrichGO(gene = names(geneList_DESeq2_IN), OrgDb = org.Hs.eg.db,
                    keyType = 'ENSEMBL', ont = "MF", pAdjustMethod = "BH",
                    pvalueCutoff  = 0.1, readable = T)
 
-head(ego2MF)
-goplot(ego2MF)
+head(ego2MF_IN)
+goplot(ego2MF_IN)
 
 #Cellular Components
-ego2CC <- enrichGO(gene = names(geneList_DESeq2), OrgDb = org.Hs.eg.db,
+ego2CC_IN <- enrichGO(gene = names(geneList_DESeq2_IN), OrgDb = org.Hs.eg.db,
                    keyType = 'ENSEMBL', ont = "CC", pAdjustMethod = "BH",
                    pvalueCutoff  = 0.1, readable = T)
                 
-head(ego2CC)
-goplot(ego2CC)
+head(ego2CC_IN)
+goplot(ego2CC_IN)
 
 #Biological Process
-ego2BP <- enrichGO(gene = names(geneList_DESeq2), OrgDb = org.Hs.eg.db,
+ego2BP_IN <- enrichGO(gene = names(geneList_DESeq2_IN), OrgDb = org.Hs.eg.db,
                    keyType = 'ENSEMBL', ont = "BP", pAdjustMethod = "BH",
                    pvalueCutoff  = 0.1, readable = T)
 
-head(ego2BP)
-goplot(ego2BP)
+head(ego2BP_IN)
+goplot(ego2BP_IN)
+
+#STEN VS NINF
+#Molecular Function
+ego2MF_SN <- enrichGO(gene = names(geneList_DESeq2_SN), OrgDb = org.Hs.eg.db,
+                      keyType = 'ENSEMBL', ont = "MF", pAdjustMethod = "BH",
+                      pvalueCutoff  = 0.1, readable = T)
+
+head(ego2MF_SN)
+goplot(ego2MF_SN)
+
+#Cellular Components
+ego2CC_SN <- enrichGO(gene = names(geneList_DESeq2_SN), OrgDb = org.Hs.eg.db,
+                      keyType = 'ENSEMBL', ont = "CC", pAdjustMethod = "BH",
+                      pvalueCutoff  = 0.1, readable = T)
+                
+head(ego2CC_SN)
+goplot(ego2CC_SN)
+
+#Biological Process
+ego2BP_SN <- enrichGO(gene = names(geneList_DESeq2_SN), OrgDb = org.Hs.eg.db,
+                      keyType = 'ENSEMBL', ont = "BP", pAdjustMethod = "BH",
+                      pvalueCutoff  = 0.1, readable = T)
+
+head(ego2BP_SN)
+goplot(ego2BP_SN)
 
 
+#STEN VS INF
 #Molecular Function
 ego2MF_SI <- enrichGO(gene = names(geneList_DESeq2_SI), OrgDb = org.Hs.eg.db,
                       keyType = 'ENSEMBL', ont = "MF", pAdjustMethod = "BH",
@@ -512,26 +554,37 @@ ego2BP_SI <- enrichGO(gene = names(geneList_DESeq2_SI), OrgDb = org.Hs.eg.db,
 
 head(ego2BP_SI)
 goplot(ego2BP_SI)
-
 ```
 
 
 #### **Kyoto Encyclopedia of Genes and Genomes (KEGG)**
-In order to use the KEGG database, ENSEMBL ID are converted in ENTREZID. An higher p-value threshold (padj < 0.3) is needed for the Stenotic-Inflamed comparison because of the low number of DE genes present having a smaller p-value.
+In order to use the KEGG database, ENSEMBL ID are converted in ENTREZID. An higher p-value threshold (padj < 0.3) is needed for the Stenotic-Inflamed comparison because of the low number of DE genes having a smaller p-value.
 
-```{r}
-gene_df2 <- bitr(names(geneList_DESeq2), fromType = "ENSEMBL",
+```{r, warning=FALSE, message=FALSE}
+#INF VS NINF
+gene_df2_IN <- bitr(names(geneList_DESeq2_IN), fromType = "ENSEMBL",
                  toType = "ENTREZID", OrgDb = org.Hs.eg.db)
-geneList_df2 <- resSig2$log2FoldChange    
-names(geneList_df2) <- gene_df2$ENTREZID
+geneList_df2_IN <- res2_inf_noninf$log2FoldChange    
+names(geneList_df2_IN) <- gene_df2_IN$ENTREZID
 
-kk2 <- enrichKEGG(gene = gene_df2$ENTREZID, organism = 'hsa', pvalueCutoff = 0.1)
-head(kk2)
+kk2_IN <- enrichKEGG(gene = gene_df2_IN$ENTREZID, organism = 'hsa', pvalueCutoff = 0.1)
+head(kk2_IN)
 
 
+#STEN VS NINF
+gene_df2_SN <- bitr(names(geneList_DESeq2_SN), fromType = "ENSEMBL",
+                 toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+geneList_df2_SN <- res2_sten_noninf$log2FoldChange    
+names(geneList_df2_SN) <- gene_df2_SN$ENTREZID
+
+kk2_SN <- enrichKEGG(gene = gene_df2_SN$ENTREZID, organism = 'hsa', pvalueCutoff = 0.1)
+head(kk2_SN)
+
+
+#STEN VS INF
 gene_df2_SI <- bitr(names(geneList_DESeq2_SI), fromType = "ENSEMBL",
                     toType = "ENTREZID", OrgDb = org.Hs.eg.db)
-geneList_df2_SI <- resSig2_SI$log2FoldChange    
+geneList_df2_SI <- res2_sten_inf$log2FoldChange    
 names(geneList_df2_SI) <- gene_df2_SI$ENTREZID
 
 kk2_SI <- enrichKEGG(gene = gene_df2_SI$ENTREZID, organism = 'hsa', pvalueCutoff = 0.3)
