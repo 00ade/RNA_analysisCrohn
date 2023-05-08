@@ -1,6 +1,6 @@
 ---
 title: "Chron's Disease DESeq analysis"
-author: Stefano Catanzaro, Marina Piccari, Adelina Vivaldo
+author: "Stefano Catanzaro, Marina Piccari, Adelina Vivaldo"
 output:
   html_document:
       # code_folding: show
@@ -15,6 +15,7 @@ output:
     toc_depth: '3'
 
 ---
+
 ```{=html}
 <style>
 p.caption {
@@ -34,6 +35,21 @@ colorize <- function(x, color) {
   } else x
 }
 ```
+![](./Images/Title.png){width=600px}
+
+# Introduction
+
+#### **Aim of the paper**
+*Understand the pathophysiology of fibro-stenotic complications due to intestinal inflammation characteristic of Crohn's disease.*
+
+#### **Disease development**
+![](./Images/CD development.png){width=750px}
+
+#### **Patients and samples**
+![](./Images/Samples.png){width=750px}
+
+#### **Data pre-processing**
+For the differential gene expression analysis, raw sequences were merged per sample and checked for quality using **FastQC** and **MultiQC**. The sequences were then aligned to the reference **genome GRCh38** using **STAR**, and sorted and converted into binary files using **SAMtools**.
 
 # Setup 
 
@@ -52,9 +68,10 @@ library("limma")
 library("ashr")
 ```
 
+
 Raw Counts matrix and corresponding metadata are uploaded. Genes are not considered if they have less than 1 count per million (CPM) in more than 11 samples.
 ```{r,warning=FALSE,message=FALSE}
-setwd("C:/Users/Stefano/OneDrive - Politecnico di Bari/Documenti/Univr/Programming for bioinformatics/RNA_analysisCrohn/data/GENDX000019")
+setwd("C:/Users/122002/Desktop/VERONA/Programming_for_bioinf/RNA_analysisCrohn/data/GENDX000019")
 df <- read.delim("GENDX000019_GeneMatrix_rawCounts.txt", row.names=1)
 metadata <- read.delim("GEND000019-meta.txt", row.names=5)
 
@@ -93,7 +110,6 @@ A principal component analysis (PCA) plot allows to visualize the patterns of va
 plotPCA(rld1, intgroup = c("Disease"))
 plotPCA(rld1, intgroup = c("Gender", "Disease"))
 plotPCA(rld1, intgroup = c("Age.Level", "Disease"))
-
 ```
 
 ### DESeq Results
@@ -134,7 +150,7 @@ plotCounts(dds1, gene=topGenes1[5], intgroup=c("Disease"))
 
 #### **MA plots**
 The MA plot represents the LFC of the genes as a function of the average expression between the two conditions, which are theoretically equivalent information between the two experimental conditions.
-**Chiedi se vanno bene tutti e 3**
+
 ```{r}
 resultsNames(dds1)
 res1_Disease_MA <- results(dds1, contrast = list("Disease_Healthy.Control_vs_Crohn.s.Disease" ))
@@ -167,13 +183,15 @@ hist(res_fdr1$pval, col = "royalblue4", xlab = "CORRECTED p-values", border="whi
 ```
 
 #### **Heatmap**
-A clustered heatmap is plotted over Disease and Gender.
+A clustered heatmap is plotted over Disease and Gender using the 20 more variant genes among samples.
 Since the influence of Gender on gene expression is evident, a new heatmap is plotted after removing Batch effect of Gender.
 ```{r pheatmap}
 library("genefilter")
 library("clusterProfiler")
 library("pheatmap")
-topVarGenes1 <- head(order(rowVars(assay(rld1)),decreasing=TRUE),20)
+
+#More variant genes among samples
+topVarGenes1 <- order(rowVars(assay(rld1)),decreasing=TRUE)
 mat1 <- assay(rld1)[topVarGenes1, ]
 mat1 <- mat1 - rowMeans(mat1)
 
@@ -181,10 +199,12 @@ new_mat1 <- removeBatchEffect(mat1, batch= colData(rld1)$Gender)
 
 df_clust1 <- as.data.frame(colData(rld1)[,c("Gender","Disease")])
 
-pheatmap(mat1, annotation_col=df_clust1, main = "Disease - Gender heatmap")
-pheatmap(new_mat1, annotation_col=df_clust1, main = "Disease - Gender heatmap without Batch effect")
 
+pheatmap(head(mat1, 20), annotation_col=df_clust1, main = "Heatmap with Batch effect of Gender", cluster_cols = T)
+
+pheatmap(head(new_mat1, 20), annotation_col=df_clust1, main = "Heatmap without Batch effect of Gender",cluster_cols = F)
 ```
+
 
 ### Enrichment
 Once the differentially expressed genes have been identified, enrichment analysis can be used to identify the biological pathways, gene ontology terms, or functional categories that are more common in the list of DE genes.
@@ -265,19 +285,20 @@ metadata$Disease.State1 <- relevel(metadata$Disease.State, "inflamed")
 ```
 
 ```{r, message = FALSE, warning=FALSE}
-dds2 <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level  + Development.Stage + Disease.State)
+dds2 <- DESeqDataSetFromMatrix(df1, colData=metadata,
+                               design = ~ Gender + Age.Level  + Development.Stage + Disease.State)
 
 rld2 <- rlog(dds2, blind=FALSE)
 
 
-dds2_SI <- DESeqDataSetFromMatrix(df1, colData=metadata, design = ~ Gender + Age.Level  + Development.Stage + Disease.State1)
+dds2_SI <- DESeqDataSetFromMatrix(df1, colData=metadata,
+                                  design = ~ Gender + Age.Level  + Development.Stage + Disease.State1)
 
 rld2_SI <- rlog(dds2_SI, blind=FALSE)
 ```
 
 
 ### PCA plots
-
 A principal component analysis (PCA) plot allows to visualize the patterns of variability in the data.
 ```{r}
 plotPCA(rld2, intgroup = c("Disease", "Disease.State"))
@@ -434,29 +455,40 @@ hist(res_fdr2_SI$pval, col = "royalblue4", main = "STEN vs INF", xlab = "CORRECT
 ```
 
 #### **Heatmap**
-Clustered heatmaps, after removing Batch effect of Gender, are plotted over Disease.State and Gender.
-**Sono identiche, è ok??**
+Clustered heatmaps, after removing Batch effect of Gender, are plotted over Disease.State and Gender using the 20 most variant genes among samples.
+
 ```{r}
-#IN e SN
-topVarGenes2 <- head(order(rowVars(assay(rld2)),decreasing=TRUE),20) 
+#Most variant genes among samples
+topVarGenes2 <- order(rowVars(assay(rld2)),decreasing=TRUE) 
 mat2 <- assay(rld2)[topVarGenes2, ]
 mat2 <- mat2 - rowMeans(mat2)
 new_mat2 <- removeBatchEffect(mat2, batch= colData(rld2)$Gender) 
 
 df_clust2 <- as.data.frame(colData(rld2)[,c("Gender","Disease.State")])
-pheatmap(new_mat2, annotation_col=df_clust2, main = "Disease.State - Gender heatmap without Batch effect")
-
-
-#SI
-topVarGenes2_SI <- head(order(rowVars(assay(rld2_SI)),decreasing=TRUE),20) 
-mat2_SI <- assay(rld2_SI)[topVarGenes2_SI, ]
-mat2_SI <- mat2_SI - rowMeans(mat2_SI)
-new_mat2_SI <- removeBatchEffect(mat2_SI, batch= colData(rld2_SI)$Gender) 
-
-df_clust2_SI <- as.data.frame(colData(rld2_SI)[,c("Gender","Disease.State")])
-pheatmap(new_mat2_SI, annotation_col=df_clust2_SI, main = "Disease.State - Gender heatmap without Batch effect")
+pheatmap(head(new_mat2, 20), annotation_col=df_clust2, main = "Heatmap without Batch effect on Gender", cluster_cols = F)
 ```
 
+Clustered heatmaps, after removing Batch effect of Gender, are plotted over Disease.State and Gender using the most significantly DE genes among samples.
+
+```{r}
+#Most significantly DE genes
+#IN
+res2_inf_noninf_LFC <- res2_inf_noninf[order(abs(res2_inf_noninf$log2FoldChange), decreasing = T),]
+topDEGenes2_IN <- new_mat2[rownames(res2_inf_noninf_LFC),]
+pheatmap(topDEGenes2_IN, annotation_col=df_clust2, main = "Heatmap INF vs NINF", cluster_cols = F)
+
+#SN
+res2_sten_noninf_LFC <-res2_sten_noninf[order(abs(res2_sten_noninf$log2FoldChange),
+                                               decreasing = T),]
+topDEGenes2_SN <- new_mat2[rownames(res2_sten_noninf_LFC),]
+pheatmap(head(topDEGenes2_SN,20), annotation_col=df_clust2, main = "Heatmap STEN vs NINF", cluster_cols = F)
+
+#SI
+res2_sten_inf_LFC <-res2_sten_inf[order(abs(res2_sten_inf$log2FoldChange),
+                                               decreasing = T),]
+topDEGenes2_SI <- new_mat2[rownames(res2_sten_inf_LFC),]
+pheatmap(topDEGenes2_SI, annotation_col=df_clust2, main = "Heatmap  STEN vs INF", cluster_cols = F)
+```
 
 
 
@@ -590,3 +622,7 @@ names(geneList_df2_SI) <- gene_df2_SI$ENTREZID
 kk2_SI <- enrichKEGG(gene = gene_df2_SI$ENTREZID, organism = 'hsa', pvalueCutoff = 0.3)
 head(kk2_SI)
 ```
+
+# Conclusions
+
+![](./Images/Results.png){width=500px}
