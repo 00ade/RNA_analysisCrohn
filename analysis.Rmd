@@ -49,7 +49,7 @@ colorize <- function(x, color) {
 ![](./Images/Samples.png){width=750px}
 
 #### **Data pre-processing**
-For the differential gene expression analysis, raw sequences were merged per sample and checked for quality using **FastQC** and **MultiQC**. The sequences were then aligned to the reference **genome GRCh38** using **STAR**, and sorted and converted into binary files using **SAMtools**.
+For the differential gene expression analysis, raw sequences were merged per sample and checked for quality using **FastQC** and **MultiQC**. The sequences were then aligned to the reference **genome GRCh38** using **STAR**, and sorted and converted into binary files using **SAMtools**. Reads were counted and annotated using the Ensembl annotations using the **featureCounts** module in the Subread package.
 
 # Setup 
 
@@ -70,8 +70,8 @@ library("ashr")
 
 
 Raw Counts matrix and corresponding metadata are uploaded. Genes are not considered if they have less than 1 count per million (CPM) in more than 11 samples.
-```{r,warning=FALSE,message=FALSE}
-setwd("C:/Users/122002/Desktop/VERONA/Programming_for_bioinf/RNA_analysisCrohn/data/GENDX000019")
+```{r,warning=FALSE,message=FALSE,echo=-1}
+setwd("C:/Users/Stefano/OneDrive - Politecnico di Bari/Documenti/Univr/Programming for bioinformatics/RNA_analysisCrohn/data/GENDX000019")
 df <- read.delim("GENDX000019_GeneMatrix_rawCounts.txt", row.names=1)
 metadata <- read.delim("GEND000019-meta.txt", row.names=5)
 
@@ -107,11 +107,23 @@ rld1 <- rlog(dds1, blind=FALSE)
 A principal component analysis (PCA) plot allows to visualize the patterns of variability in the data.
 
 ```{r, warning=FALSE, message=FALSE}
-plotPCA(rld1, intgroup = c("Disease")) + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
+plotPCA(rld1, intgroup = c("Disease")) + 
+  theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, 
+  linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', 
+  colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', 
+  colour = "white"))
 
-plotPCA(rld1, intgroup = c("Gender", "Disease")) + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
+plotPCA(rld1, intgroup = c("Gender", "Disease")) + 
+  theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, 
+  linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', 
+  colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', 
+  colour = "white"))
 
-plotPCA(rld1, intgroup = c("Age.Level", "Disease")) + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
+plotPCA(rld1, intgroup = c("Age.Level", "Disease")) + 
+  theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, 
+  linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', 
+  colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', 
+  colour = "white"))
 ```
 
 ### DESeq Results
@@ -303,7 +315,11 @@ rld2_SI <- rlog(dds2_SI, blind=FALSE)
 ### PCA plots
 A principal component analysis (PCA) plot allows to visualize the patterns of variability in the data.
 ```{r, warning=FALSE, message=FALSE}
-plotPCA(rld2, intgroup = c("Disease", "Disease.State")) + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
+plotPCA(rld2, intgroup = c("Disease", "Disease.State")) + 
+  theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, 
+  linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', 
+  colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', 
+  colour = "white"))
 ```
 
 ### DESeq results
@@ -335,7 +351,7 @@ head(resSig2_SI)
 ```
 
 #### **Shrinkage**
-Too large log2FoldChange values suggest to perform **Shrinkage** for the 3 different comparisons.
+Too large log2FoldChange values suggest to perform **shrinkage** for the 3 different comparisons.
 
 ```{r, message = FALSE, warning = FALSE}
 #INF vs NINF
@@ -381,21 +397,33 @@ topGenes2_IN<-rownames(res2_inf_noninf[order(res2_inf_noninf$padj),])
 geneCounts2_IN <- plotCounts(dds2, gene=topGenes2_IN[1],
                              intgroup=c("Disease.State"), returnData=T)
 ggplot(geneCounts2_IN, aes(x=Disease.State, y=count, fill=Disease.State)) +
-  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center") + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
+  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center") + 
+  theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, 
+  linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', 
+  colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', 
+  colour = "white"))
 
 #STEN vs NINF
 topGenes2_SN<-rownames(res2_sten_noninf[order(res2_sten_noninf$padj),])
 geneCounts2_SN <- plotCounts(dds2, gene=topGenes2_SN[1],
                              intgroup=c("Disease.State"), returnData=T)
 ggplot(geneCounts2_SN, aes(x=Disease.State, y=count, fill=Disease.State)) +
-  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center") + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
+  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center") + 
+  theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, 
+  linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', 
+  colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', 
+  colour = "white"))
 
 #STEN vs INF
 topGenes2_SI<-rownames(res2_sten_inf[order(res2_sten_inf$padj),])
 geneCounts2_SI <- plotCounts(dds2_SI, gene=topGenes2_SI[1],
                              intgroup=c("Disease.State"), returnData=T)
 ggplot(geneCounts2_SI, aes(x=Disease.State, y=count, fill=Disease.State)) +
-  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center") + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
+  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center") + 
+  theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, 
+  linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', 
+  colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', 
+  colour = "white"))
 ```
 
 
