@@ -106,10 +106,12 @@ rld1 <- rlog(dds1, blind=FALSE)
 ### PCA plots
 A principal component analysis (PCA) plot allows to visualize the patterns of variability in the data.
 
-```{r}
-plotPCA(rld1, intgroup = c("Disease"))
-plotPCA(rld1, intgroup = c("Gender", "Disease"))
-plotPCA(rld1, intgroup = c("Age.Level", "Disease"))
+```{r, warning=FALSE, message=FALSE}
+plotPCA(rld1, intgroup = c("Disease")) + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
+
+plotPCA(rld1, intgroup = c("Gender", "Disease")) + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
+
+plotPCA(rld1, intgroup = c("Age.Level", "Disease")) + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
 ```
 
 ### DESeq Results
@@ -300,8 +302,8 @@ rld2_SI <- rlog(dds2_SI, blind=FALSE)
 
 ### PCA plots
 A principal component analysis (PCA) plot allows to visualize the patterns of variability in the data.
-```{r}
-plotPCA(rld2, intgroup = c("Disease", "Disease.State"))
+```{r, warning=FALSE, message=FALSE}
+plotPCA(rld2, intgroup = c("Disease", "Disease.State")) + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
 ```
 
 ### DESeq results
@@ -379,21 +381,21 @@ topGenes2_IN<-rownames(res2_inf_noninf[order(res2_inf_noninf$padj),])
 geneCounts2_IN <- plotCounts(dds2, gene=topGenes2_IN[1],
                              intgroup=c("Disease.State"), returnData=T)
 ggplot(geneCounts2_IN, aes(x=Disease.State, y=count, fill=Disease.State)) +
-  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center")
+  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center") + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
 
 #STEN vs NINF
 topGenes2_SN<-rownames(res2_sten_noninf[order(res2_sten_noninf$padj),])
 geneCounts2_SN <- plotCounts(dds2, gene=topGenes2_SN[1],
                              intgroup=c("Disease.State"), returnData=T)
 ggplot(geneCounts2_SN, aes(x=Disease.State, y=count, fill=Disease.State)) +
-  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center")
+  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center") + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
 
 #STEN vs INF
 topGenes2_SI<-rownames(res2_sten_inf[order(res2_sten_inf$padj),])
 geneCounts2_SI <- plotCounts(dds2_SI, gene=topGenes2_SI[1],
                              intgroup=c("Disease.State"), returnData=T)
 ggplot(geneCounts2_SI, aes(x=Disease.State, y=count, fill=Disease.State)) +
-  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center")
+  scale_y_log10() + geom_dotplot(binaxis="y", stackdir="center") + theme(panel.background = element_rect(fill = "#d5eff1",colour = "#d5eff1",size = 0.5, linetype = "solid"), panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white"))
 ```
 
 
@@ -625,4 +627,16 @@ head(kk2_SI)
 
 # Conclusions
 
+#### **Pathway analysis discussion**
+In the paper, by performing pathway analysis on the differentially methylated regions (DMRs) and differentially expressed genes (DEGs), they observed dysregulation of genes associated to **cellular differentiation**, **morphogenesis**, and **extracellular matrix remodeling**.
+
+![](./Images/Enrichment.png){width=500px}
+
+#### **DE genes**
 ![](./Images/Results.png){width=500px}
+
+#### **Relevant genes**
+
+![](./Images/Relevant genes.png){width=800px}
+
+*To conclude our results are coherent with those obtained in the paper, as well as with the Crohn's disease scenario. In particular, clear distinctions are observed when comparing stenotic and non-inflamed samples.*
