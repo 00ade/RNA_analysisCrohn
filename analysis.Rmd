@@ -46,6 +46,7 @@ colorize <- function(x, color) {
 ![](./Images/CD development.png){width=750px}
 
 #### **Patients and samples**
+21 samples from 14 unique patients.
 ![](./Images/Samples.png){width=750px}
 
 #### **Data pre-processing**

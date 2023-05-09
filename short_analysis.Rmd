@@ -46,10 +46,8 @@ colorize <- function(x, color) {
 ![](./Images/CD development.png){width=750px}
 
 #### **Patients and samples**
+21 samples from 14 unique patients.
 ![](./Images/Samples.png){width=750px}
-
-#### **Data pre-processing**
-For the differential gene expression analysis, raw sequences were merged per sample and checked for quality using **FastQC** and **MultiQC**. The sequences were then aligned to the reference **genome GRCh38** using **STAR**, and sorted and converted into binary files using **SAMtools**. Reads were counted and annotated using the Ensembl annotations using the **featureCounts** module in the Subread package.
 
 # Setup 
 
